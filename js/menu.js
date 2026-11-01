@@ -1,7 +1,9 @@
 // ゲーム中のメニュー（≡）：推理ノート・ヒント・地図・会話の履歴・セーブ／ロード・あらすじ・成績・設定・操作説明・タイトルへ
 // 設定と操作説明は、タイトル画面からも開く
 import { world, history, snapshot, goTo, NAMES } from './play.js';
-import { S, save, KEY } from './save.js';
+import { THREE } from './engine.js';
+import { S, save, KEY, STEPS, stepIndex, reached } from './save.js';
+export { STEPS, stepIndex, reached };
 import { openNotebook, QSETS, iconOf } from './notebook.js';
 import { VERSION, VERSION_DATE } from './version.js';
 import { isMuted, setMuted, getVolume, setVolume, page } from './audio.js';
@@ -10,15 +12,14 @@ const $ = id => document.getElementById(id);
 const SLOTS = 3;
 
 // ---- 進み具合（セーブの場所）と、その名前 ----
-export const STEPS = ['intro', 'explore', 'holmes', 'window', 'end', 'c2', 'c2read', 'c2alley', 'c2quiz', 'c2reveal', 'c2leave', 'end2'];
 const STEP_NAME = {
   intro: ['第1章', 'ベーカー街221B'], explore: ['第1章', '置き忘れのステッキ'], holmes: ['第1章', 'ホームズの推理'],
   window: ['第1章', '窓の外'], end: ['第1章', 'おわり'],
   c2: ['第2章', '古文書'], c2read: ['第2章', '古文書'], c2alley: ['第2章', 'イチイの並木道'], c2quiz: ['第2章', '推理'],
   c2reveal: ['第2章', '巨大な犬の足跡'], c2leave: ['第2章', 'ヘンリー卿の知らせ'], end2: ['第2章', 'おわり'],
+  c3: ['第3章', 'たばこの煙の夜'], c3morning: ['第3章', 'ヘンリー卿'], c3letter: ['第3章', '切り抜きの手紙'], c3quiz: ['第3章', '推理'],
+  c3explain: ['第3章', 'ホームズの見立て'], c3street: ['第3章', 'リージェント街'], c3office: ['第3章', '使い走りの事務所の前'], end3: ['第3章', 'おわり'],
 };
-export const stepIndex = s => Math.max(0, STEPS.indexOf(s));
-export const reached = s => stepIndex(S.step) >= stepIndex(s);
 export const stepLabel = s => (STEP_NAME[s] || ['', '']).join('　');
 
 // ---- 画面の設定（文字の大きさ・明るさ）。端末に覚える ----
@@ -136,7 +137,8 @@ function openMap() {
   for (const t of Object.values(a.things)) {
     const done = world.examined.has(t.id);
     if (!done && (t.hidden || !world.sparkle(t.id))) continue;
-    const x = X(t.hit.position.x), y = Z(t.hit.position.z);
+    const wp = t.hit.getWorldPosition(new THREE.Vector3());
+    const x = X(wp.x), y = Z(wp.z);
     g.fillStyle = done ? '#6a625a' : '#e3c06f';
     g.beginPath(); g.arc(x, y, 9, 0, 7); g.fill();
     g.fillStyle = done ? '#ddd' : '#1a1210'; g.font = 'bold 11px sans-serif';
@@ -213,10 +215,17 @@ function openRecap() {
   if (reached('c2read')) {
     const c = [];
     if (S.clues.includes('legend')) c.push(card(iconOf('legend'), '1742年の伝説。荒野の魔犬が、バスカヴィル家を呪う'));
-    if (S.clues.includes('paper')) c.push(card(iconOf('paper'), '当主サー・チャールズが、館の裏の並木道で急死'));
+    if (S.clues.includes('paper')) c.push(card(iconOf('paper'), 'バスカヴィル家の主人、サー・チャールズが、館の裏の並木道で急死'));
     if (reached('c2reveal')) c.push(card(iconOf('hound'), '「ホームズさん……巨大な犬の足跡でした」'));
-    if (reached('end2')) c.push(card(faceSrc('mortimer'), '相続人ヘンリー卿が、カナダからロンドンに着く', true));
+    if (reached('end2')) c.push(card(faceSrc('mortimer'), '跡継ぎのヘンリー卿が、カナダからロンドンに着く', true));
     if (c.length) ch.push(['第2章　バスカヴィル家の呪い', c]);
+  }
+  if (reached('c3morning')) {
+    const c = [card(faceSrc('henry'), '跡継ぎのヘンリー卿が、ベーカー街へ', true)];
+    if (reached('c3quiz')) c.push(card(iconOf('cutwords'), '新聞の文字を切り抜いた手紙。「荒野に近づくな」'));
+    if (reached('c3street')) c.push(card(iconOf('boot'), 'ホテルで、新品の靴が片方だけ消えた'));
+    if (reached('c3office')) c.push(card(iconOf('cab'), 'ヘンリー卿をつける辻馬車2704と、黒ひげの男'));
+    ch.push(['第3章　ヘンリー・バスカヴィル卿', c]);
   }
   const body = ch.length ? ch.map(([t, c]) => `<h4>${t}</h4><div class="rcards">${c.join('')}</div>`).join('') : '<p class="empty">物語は、まだ始まったばかり</p>';
   const m = panel(`<h3>これまでのあらすじ</h3><div class="recap">${body}</div>${back()}`, 'tall');
@@ -242,6 +251,12 @@ function openScore() {
   if (reached('c2alley')) {
     rows.push(['第2章　バスカヴィル家の呪い', [['ホームズと同じ推理', ded('c2')], ['並木道で調べた物', seen('alley')],
       ['隠れた手がかり', `${S.clues.includes('hound') ? 1 : 0} / 1${S.clues.includes('hound') ? ' <span class="star">★</span>' : ''}`]]]);
+  }
+  if (reached('c3letter')) {
+    const lc = ['cutwords', 'moorink', 'scissors', 'envelope', 'ink'].filter(c => S.clues.includes(c)).length;
+    const sp = S.examined.includes('spotted');
+    rows.push(['第3章　ヘンリー・バスカヴィル卿', [['ホームズと同じ推理', ded('c3')], ['手紙と封筒の手がかり', `${lc} / 5`],
+      ['ホームズより先に、馬車に気づいた', reached('c3office') ? (sp ? '1 / 1 <span class="star">★</span>' : '0 / 1') : '<span class="dim">まだ</span>']]]);
   }
   const rate = askAll ? Math.round(hitAll / askAll * 100) : null;
   const body = rows.map(([t, r]) => `<h4>${t}</h4><table class="score">${r.map(([k, v]) => `<tr><th>${k}</th><td>${v}</td></tr>`).join('')}</table>`).join('');

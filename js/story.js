@@ -1,7 +1,7 @@
 // 第1章「シャーロック・ホームズ氏」：ベーカー街221B の朝、置き忘れのステッキ
 // 原作（第1章）の筋はそのまま。雫は見えない読者で、ワトソンにだけ見え、話せる（話せるのはホームズのいないときだけ）
 // 台詞は原作の英文から新しく書き起こしたもの（既存の日本語訳は使わない）
-import { world, place, hide, setPose, setFace, faceTo, faceActor, walkTo, walkStraight, say, toast, wait, fade, lookOut } from './play.js';
+import { world, place, hide, setPose, setFace, faceTo, faceActor, walkTo, walkStraight, say, toast, wait, fade, lookOut, choose } from './play.js';
 import { THREE } from './engine.js';
 import { makeStick, STREET_Y } from './room.js';
 import { inspectStick } from './inspect.js';
@@ -9,6 +9,7 @@ import { deduce, results, openNotebook } from './notebook.js';
 import { S, save, addClue, addPerson } from './save.js';
 import { chime, bell, door, fanfare, miss } from './audio.js';
 import { runChapter2 } from './chapter2.js';
+import { runChapter3 } from './chapter3.js';
 
 const $ = id => document.getElementById(id);
 const A = id => world.actors[id];
@@ -20,15 +21,15 @@ export const LOOK = {
   fire: ['本物の暖炉……！ あったかい', 'happy'],
   clock: ['置き時計。まだ朝の早い時間'],
   slipper: ['ペルシャ・スリッパの中に、たばこの葉！ 本当にここに入れてるんだ……！', 'happy'],
-  letters: ['返事を書いていない手紙が、ナイフで炉棚に突き刺してある……！', 'surprised'],
+  letters: ['返事を出していない手紙が、暖炉の上の棚にナイフで突き刺してある……！', 'surprised'],
   cigars: ['石炭入れの中に、葉巻。……なんでそこに？'],
   hearth: ['暖炉の前の敷物。物語は、ここから始まるんだ……', 'relaxed'],
   hchair: ['ホームズの椅子。……座ったら、絶対に怒られる'],
   wchair: ['ワトソン先生の椅子。クッションが、ちょっとへこんでる'],
   coffee: ['ぴかぴかに磨いた、銀のコーヒーポット。わたしの顔が、ゆがんで映ってる'],
   paper: ['今日の朝刊。英語なのに、なぜかすらすら読める……本の中だから？'],
-  shelf: ['分厚い索引帳と、新聞の切り抜きの束。ここに事件が全部……！', 'happy'],
-  vr: ['壁に、弾の跡で「V.R.」……女王陛下の頭文字！ 部屋の中で撃ったって、本当だったんだ', 'surprised'],
+  shelf: ['分厚い事件のメモ帳と、新聞の切り抜きの束。ここに事件が全部……！', 'happy'],
+  vr: ['壁に、銃の弾の跡で「V.R.」の文字……ヴィクトリア女王の頭文字！ 部屋の中で撃ったって話、本当だったんだ', 'surprised'],
   chem: ['薬品のにおい。試験管とフラスコが、ずらり'],
   violin: ['ヴァイオリン。……さわったら、怒られる。絶対'],
   notes: ['ワトソン先生の記録帳……！ のぞきたい。……でも、がまん'],
@@ -44,10 +45,23 @@ const WATSON_ADD = {
 };
 
 const STICK_SPOTS = [
-  { id: 'band', part: 'band', caption: '<b>銀の帯</b>「C.C.H. の友人一同より、ジェームズ・モーティマー（M.R.C.S.）へ」<br><b>1884</b>　――5年前の日付' },
-  { id: 'ferrule', part: 'ferrule', caption: '<b>鉄の石突き</b>　ひどくすり減っている。この杖で、よく歩いた人だ' },
-  { id: 'teeth', part: 'teeth', caption: '<b>柄の中ほどの歯形</b>　犬がこの杖をくわえて、主人の後ろを歩いていたらしい' },
+  { id: 'band', part: 'band', caption: '<b>銀の帯</b>「C.C.H. の仲間たちより　ジェームズ・モーティマー（M.R.C.S.）へ」<br><b>1884</b>年　――5年前の日付' },
+  { id: 'ferrule', part: 'ferrule', caption: '<b>杖の先の金具</b>　ひどくすり減っている。この杖で、たくさん歩いた人だ' },
+  { id: 'teeth', part: 'teeth', caption: '<b>柄の真ん中の歯形</b>　犬がこの杖をくわえて、主人の後ろを歩いていたらしい。<br>上と下の歯形の幅は <b>約4cm</b>' },
 ];
+
+// ワトソンの知識（ワトソンは医者で、原作でもこのステッキを見ている。教えるのは知識と事実だけ）
+const KNOW = {
+  band: ['M.R.C.S. は、外科医の資格だよ。私も医者だから分かる', '「仲間たちより」か。こういう贈り物は、職場を去るときの記念品が多いね'],
+  ferrule: ['ずいぶんすり減っている。この杖で、よく歩き回っているんだろう'],
+  teeth: ['犬の歯形だね。上と下の幅は4cmほどか。……犬の大きさの目安になりそうだ'],
+};
+const ASK = {
+  mrcs: ['M.R.C.S. って？', ['王立外科医師会の会員、という意味さ。つまり、外科医の資格だね']],
+  hosp: ['病院のお医者さんのこと', ['ロンドンの大病院の偉い先生は、まず街を離れない', '田舎へ移るのは、たいてい病院に住み込みで修業していた、見習いの若い医者さ']],
+  dogs: ['犬の口の大きさ', ['テリアなら、口の幅は3cmほど。スパニエルで4cm、マスティフなら6cmはあるね']],
+  gift: ['記念品って？', ['職場を去るとき、仲間がお金を出し合って贈る品さ。私も軍医をやめるときにもらったよ']],
+};
 
 let holmesHere = false;
 let busy = false;
@@ -62,8 +76,15 @@ async function examine(id) {
     if (!S.examined.includes(id)) { S.examined.push(id); save(); }
     if (id === 'stick') {
       setPose('shizuku', 'look');
-      await inspectStick({ spots: STICK_SPOTS, isFound: c => S.clues.includes(c), onFind: c => { addClue(c); } });
+      const fresh = [];
+      await inspectStick({ spots: STICK_SPOTS, isFound: c => S.clues.includes(c), onFind: c => { if (addClue(c)) fresh.push(c); } });
       setPose('shizuku', null);
+      // 見つけた手がかりについて、ワトソンが知っていること（結論ではなく、当時の常識と事実）を話す
+      const w = A('watson');
+      if (w.visible && !holmesHere) for (const c of fresh) {
+        faceActor('watson', 'shizuku');
+        for (const line of KNOW[c] || []) await say('watson', line);
+      }
       const n = S.clues.filter(c => STICK_SPOTS.some(s => s.id === c)).length;
       if (n === 3 && !S.answers.cch) {
         await think('手がかりがそろった！ ワトソン先生に話そう', 'happy');
@@ -97,10 +118,24 @@ async function talk(id) {
     if (id === 'watson') {
       if (holmesHere) { await narr('（ワトソンが、小さくうなずいた。……ホームズの前では話せない）'); return; }
       faceActor('watson', 'shizuku');
-      const n = S.clues.length;
-      if (n === 0) await say('watson', 'まずは、あのステッキを見てみよう。帽子掛けのところだ');
-      else if (n < 3) await say('watson', 'ほかにも、何かありそうかね？ ゆっくり回して見てごらん');
-      else if (!S.answers.cch) {
+      const n = STICK_SPOTS.filter(s => S.clues.includes(s.id)).length;
+      if (n === 0) { await say('watson', 'まずは、あのステッキを見てみよう。帽子掛けのところだ'); return; }
+      if (!S.answers.cch) {
+        // 聞きたいことを選ぶ（見つけた手がかりに合わせて増える）
+        for (;;) {
+          const opts = [];
+          if (S.clues.includes('band')) opts.push(['mrcs', ASK.mrcs[0]], ['gift', ASK.gift[0]], ['hosp', ASK.hosp[0]]);
+          if (S.clues.includes('teeth')) opts.push(['dogs', ASK.dogs[0]]);
+          if (n === 3) opts.push(['ded', '推理を話す']);
+          opts.push(['bye', 'なんでもない']);
+          await say('watson', n < 3 ? `何か聞きたいことはあるかね？（ステッキの手がかり ${n} / 3）` : '何か聞きたいことはあるかね？');
+          const k = await choose(opts);
+          if (k === 'bye') { if (n < 3) await say('watson', 'ゆっくり回して見てごらん。光る所が、まだあるはずだ'); return; }
+          if (k === 'ded') break;
+          for (const line of ASK[k][1]) await say('watson', line);
+        }
+      }
+      if (!S.answers.cch) {
         await say('watson', 'よし。では、君の推理を聞かせてくれ');
         if (!await deduce()) { await say('watson', 'じっくり見直すといい。決まったら、また声をかけてくれ'); return; }
         await say('watson', 'なるほど。……ホームズが何と言うか、楽しみだね');
@@ -249,8 +284,8 @@ async function holmesScene() {
   setFace('shizuku', {});
   await say('holmes', 'では、君の推理を聞かせてくれたまえ');
   await say('watson', '持ち主は、年配の、評判のいい医者だろう。お礼の印に贈られた品だね');
-  await say('watson', '石突きがすり減っている。往診でよく歩く、田舎の医者だ');
-  await say('watson', 'C.C.H. は、地元の狩猟クラブか何かだろう');
+  await say('watson', '杖の先がすり減っている。患者の家を歩いて回る、田舎の医者だ');
+  await say('watson', 'C.C.H. は、地元の狩りの会か何かだろう');
   await say('holmes', 'すばらしい、ワトソン君！');
   await say('holmes', '君は自分では光らないが、光を伝える人だ');
   await think('出た、名ゼリフ……！', 'happy');
@@ -266,14 +301,14 @@ async function holmesScene() {
   await wait(900);
   await say('holmes', '……ふむ。だが残念ながら、君の結論はほとんどが間違いだ');
   await say('watson', 'なんだって');
-  await say('holmes', 'C.C.H. は狩猟クラブではない。チャリング・クロス病院だ');
-  await say('holmes', '病院をやめて、田舎で開業するときに、仲間から贈られた品だろう');
-  await say('holmes', '病院の正式な医師なら、ロンドンを離れはしない。住み込みの、若い外科医だったのさ');
+  await say('holmes', 'C.C.H. は狩りの会ではない。チャリング・クロス病院だ。持ち主は外科医なのだからね');
+  await say('holmes', '病院をやめて、田舎で自分の医院を開くときに、仲間から贈られた記念の品だろう');
+  await say('holmes', '病院の偉い先生なら、ロンドンを離れはしない。住み込みで働く、見習いの若い外科医だったのさ');
   await say('holmes', '人当たりがよく、野心がなく、ぼんやりしている。そして、犬を飼っている');
-  await say('holmes', 'テリアより大きく、マスティフより小さい犬だ');
+  await say('holmes', 'テリアより大きく、マスティフより小さい犬だ。歯形の幅でわかる');
   // ---- 答え合わせ ----
   const hit = await results();
-  if (hit === 3) { fanfare(); await think('ホームズと同じ答え……！ わたし、やれるかも！', 'happy'); }
+  if (hit === 4) { fanfare(); await think('ホームズと同じ答え……！ わたし、やれるかも！', 'happy'); }
   else if (hit >= 1) { chime(); await think('くやしい……！ でも、全部はずれたワトソン先生よりは……', 'angry'); }
   else { miss(); await think('ワトソン先生と、同じ間違い……', 'sad'); }
   setFace('shizuku', {});
@@ -315,7 +350,7 @@ async function windowScene() {
   setFace('shizuku', {});
   bell();
   await wait(700);
-  await say('holmes', '動かないでくれ、ワトソン君。君の同業者だ');
+  await say('holmes', '座っていてくれ、ワトソン君。君と同じ、医者のお客だ');
   hide('mortimer'); hide('dog');
   door();
   place('mortimer', 8.3, 5.85, -Math.PI / 2);
@@ -358,7 +393,7 @@ export async function runChapter1() {
     if (S.step === 'explore') {
       if (n === 0) return { who: 'watson', text: '帽子掛けのところのステッキを、手に取って見てごらん' };
       if (n < 3) return { who: 'watson', text: `ステッキをなぞって回し、光る所を探すといい。あと ${3 - n} つだ` };
-      return { who: 'watson', text: '手がかりはそろったね。私に話しかけてくれれば、君の推理を聞こう' };
+      return { who: 'watson', text: '手がかりはそろったね。わからない言葉があれば、私に聞いてくれ。推理も、私に話しかけてくれれば聞こう' };
     }
     if (S.step === 'window' && windowHook) return { who: 'shizuku', text: 'ホームズが窓の外を見てる……。わたしも、窓から通りを見てみよう' };
     if (world.locked) return { who: 'shizuku', text: '今は、ホームズとワトソン先生の話を聞こう' };
@@ -382,11 +417,10 @@ export async function runChapter1() {
 
 // ゲーム全体の入口：セーブの場所から、章を順に進める
 export async function runGame() {
-  if (!S.step.startsWith('c2') && S.step !== 'end2') {
-    await runChapter1();
-    S.step = 'c2'; save();
-  }
-  await runChapter2();
+  const ch = S.step.startsWith('c3') || S.step === 'end3' ? 3 : S.step.startsWith('c2') || S.step === 'end2' ? 2 : 1;
+  if (ch === 1) { await runChapter1(); S.step = 'c2'; save(); }
+  if (ch <= 2) { await runChapter2(); S.step = 'c3'; save(); }
+  await runChapter3();
 }
 
 export { THREE };

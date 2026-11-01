@@ -215,6 +215,11 @@ export function makeFigure(spec) {
     mo.position.set(0, hs * 0.72, hs * 0.93);
     head.add(mo);
   }
+  if (spec.beard) {   // 濃いあごひげ
+    const bd = new THREE.Mesh(new THREE.BoxGeometry(hs * 1.5, hs * 0.9, hs * 0.6), m(spec.beard));
+    bd.position.set(0, hs * 0.45, hs * 0.55);
+    head.add(bd);
+  }
   if (spec.glasses) {
     for (const side of [-1, 1]) {
       const rim = new THREE.Mesh(new THREE.TorusGeometry(0.025 * s, 0.006, 4, 8), M.brass);
@@ -272,4 +277,58 @@ export function animateDog(g, moving, dt) {
   d.t += dt;
   d.tail.rotation.y = Math.sin(d.t * 14) * 0.6;
   d.legs.forEach((l, i) => { l.rotation.x = moving ? Math.sin(d.t * 14 + (i % 2 ? Math.PI : 0) + (i > 1 ? Math.PI : 0)) * 0.5 : 0; });
+}
+
+// 辻馬車（2輪の箱型の馬車。御者は後ろの高い席。+Z が進む向き）。plate：後ろの番号札の文字
+export function makeCab(plate = '', color = '#2a2a30') {
+  const g = new THREE.Group();
+  const body = mat(color), dark = mat('#141418'), wood = mat('#5a4028');
+  // 車体
+  const cab = new THREE.Group(); cab.position.set(0, 0.55, -0.3); g.add(cab);
+  box(cab, 1.1, 1.2, 1.1, body, 0, 0, 0);
+  box(cab, 1.2, 0.08, 1.25, dark, 0, 1.2, 0);
+  box(cab, 0.9, 0.5, 0.04, mat('#3a4a5a', { emissive: '#101820' }), 0, 0.55, 0.56);   // 前の窓
+  // 車輪
+  for (const s of [-1, 1]) {
+    const wh = new THREE.Mesh(new THREE.TorusGeometry(0.55, 0.05, 6, 16), wood);
+    wh.rotation.y = Math.PI / 2; wh.position.set(s * 0.68, 0.55, -0.3); g.add(wh);
+    for (let i = 0; i < 4; i++) { const sp = new THREE.Mesh(new THREE.BoxGeometry(0.03, 1.05, 0.03), wood); sp.position.copy(wh.position); sp.rotation.x = i * Math.PI / 4; g.add(sp); }
+  }
+  // 御者台と御者（後ろの高い所）
+  box(g, 0.5, 0.08, 0.4, dark, 0, 1.9, -0.95);
+  const driver = new THREE.Group(); driver.position.set(0, 1.98, -0.95); g.add(driver);
+  box(driver, 0.36, 0.5, 0.3, mat('#3a3028'), 0, 0, 0);
+  ball(driver, 0.12, mat('#e0b898'), 0, 0.62, 0, 1);
+  cyl(driver, 0.13, 0.13, 0.2, dark, 0, 0.72, 0, 8);
+  // かじ棒と馬
+  for (const s of [-1, 1]) box(g, 0.05, 0.05, 2.0, wood, s * 0.45, 0.85, 1.1);
+  const horse = new THREE.Group(); horse.position.set(0, 0, 1.6); g.add(horse);
+  const hm = mat('#4a3020');
+  const hb = box(horse, 0.45, 0.55, 1.3, hm, 0, 0.95, 0);
+  const neck = box(horse, 0.3, 0.7, 0.35, hm, 0, 1.3, 0.6); neck.rotation.x = -0.5;
+  box(horse, 0.25, 0.3, 0.55, hm, 0, 1.75, 0.95);
+  const legs = [];
+  for (const [x, z] of [[-0.15, 0.5], [0.15, 0.5], [-0.15, -0.5], [0.15, -0.5]]) {
+    const pv = new THREE.Group(); pv.position.set(x, 0.95, z); horse.add(pv);
+    const l = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.95, 0.1), hm); l.position.y = -0.47; l.castShadow = true; pv.add(l);
+    legs.push(pv);
+  }
+  // 番号札（後ろ）
+  if (plate) {
+    const c = document.createElement('canvas'); c.width = 128; c.height = 64;
+    const x = c.getContext('2d');
+    x.fillStyle = '#f2e6c0'; x.fillRect(0, 0, 128, 64); x.strokeStyle = '#1a1210'; x.lineWidth = 4; x.strokeRect(2, 2, 124, 60);
+    x.fillStyle = '#1a1210'; x.font = 'bold 40px Georgia'; x.textAlign = 'center'; x.fillText(plate, 64, 46);
+    const tx = new THREE.CanvasTexture(c); tx.colorSpace = THREE.SRGBColorSpace;
+    const pl = new THREE.Mesh(new THREE.PlaneGeometry(0.5, 0.25), new THREE.MeshBasicMaterial({ map: tx }));
+    pl.position.set(0, 1.35, -0.87); pl.rotation.y = Math.PI; g.add(pl);
+  }
+  g.traverse(o => { if (o.isMesh) o.castShadow = true; });
+  g.userData.cab = { legs, wheels: g.children.filter(o => o.geometry && o.geometry.type === 'TorusGeometry'), t: 0, cabin: cab };
+  return g;
+}
+export function animateCab(g, speed, dt) {
+  const c = g.userData.cab;
+  c.t += dt * (0.6 + speed * 1.6);
+  c.legs.forEach((l, i) => { l.rotation.x = speed > 0.05 ? Math.sin(c.t * 4 + (i % 2 ? Math.PI : 0) + (i > 1 ? 1.2 : 0)) * Math.min(0.6, speed * 0.25) : 0; });
 }

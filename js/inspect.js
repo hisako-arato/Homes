@@ -39,18 +39,23 @@ const ferruleTex = () => tex(256, 128, (g, w, h) => {
   }
   g.fillStyle = 'rgba(200,200,205,.55)'; g.fillRect(0, h * 0.75, w, h * 0.25);
 });
-// 柄の中ほどの歯形
-const teethTex = () => tex(512, 128, (g, w, h) => {
+// 柄の真ん中の歯形（上と下の歯形の間に、幅を測る目盛りを描く）
+const teethTex = () => tex(512, 160, (g, w, h) => {
   g.clearRect(0, 0, w, h);
+  const top = h * 0.24, bot = h * 0.76;
   for (const [cx, side] of [[110, 0], [150, 0], [190, 0], [118, 1], [158, 1], [198, 1], [360, 0], [400, 0], [368, 1], [408, 1]]) {
-    const y = side ? h * 0.72 : h * 0.28;
+    const y = side ? bot : top;
     g.fillStyle = 'rgba(20,10,4,.85)';
     g.beginPath(); g.ellipse(cx, y, 9, 13, 0, 0, 7); g.fill();
     g.fillStyle = 'rgba(160,110,70,.6)';
     g.beginPath(); g.ellipse(cx - 2, y - 3, 4, 5, 0, 0, 7); g.fill();
   }
+  // 目盛り（上の歯形から下の歯形まで＝約4cm）
+  g.strokeStyle = '#ffe9a8'; g.fillStyle = '#ffe9a8'; g.lineWidth = 3;
+  g.beginPath(); g.moveTo(262, top); g.lineTo(262, bot); g.moveTo(250, top); g.lineTo(274, top); g.moveTo(250, bot); g.lineTo(274, bot); g.stroke();
+  for (let i = 1; i < 4; i++) { const y = top + (bot - top) * i / 4; g.beginPath(); g.moveTo(256, y); g.lineTo(268, y); g.stroke(); }
+  g.font = 'bold 26px sans-serif'; g.fillText('4cm', 280, h / 2 + 9);
 });
-
 // spots: [{ id, part:'band'|'ferrule'|'teeth', caption }]、found(id)：見つけた手がかり（済みなら true）
 export function inspectStick({ spots, onFind, isFound }) {
   const box = $('inspect');
@@ -73,7 +78,7 @@ export function inspectStick({ spots, onFind, isFound }) {
   P.band.scale.set(1, 1.6, 1);
   P.ferrule.material = new THREE.MeshStandardMaterial({ map: ferruleTex(), metalness: 0.5, roughness: 0.6 });
   P.ferrule.scale.set(1.15, 1.6, 1.15);
-  const teeth = new THREE.Mesh(new THREE.CylinderGeometry(0.0158, 0.0158, 0.07, 24, 1, true), new THREE.MeshStandardMaterial({ map: teethTex(), transparent: true, roughness: 0.7 }));
+  const teeth = new THREE.Mesh(new THREE.CylinderGeometry(0.0158, 0.0158, 0.09, 24, 1, true), new THREE.MeshStandardMaterial({ map: teethTex(), transparent: true, roughness: 0.7 }));
   teeth.position.y = 0.48; stick.add(teeth);
   const partY = { band: 0.95 * 0.86, ferrule: 0.04, teeth: 0.48 };
   // 指でも当てやすいよう、杖より太い見えない筒でタップを受ける
@@ -146,6 +151,8 @@ export function inspectStick({ spots, onFind, isFound }) {
   function zoomTo(s) {
     view.close = s;
     view.tdist = 0.32; view.tty = partY[s.part] - 0.5;
+    // 歯形は、目盛り（模様の真ん中）がこちらを向くように回してから寄る
+    if (s.part === 'teeth') view.yaw = -Math.PI * 2 * (262 / 512) + 0.25;
     cap.innerHTML = s.caption;
     cap.classList.add('on');
     if (!isFound(s.id)) { onFind(s.id); chime(); count(); }
@@ -165,7 +172,7 @@ export function inspectStick({ spots, onFind, isFound }) {
     t += 0.016;
     view.dist += (view.tdist - view.dist) * 0.12;
     view.ty += (view.tty - view.ty) * 0.12;
-    if (view.close && !drag) view.yaw += 0.004;   // 寄っている間は、ゆっくり回して文字を読ませる
+    if (view.close && !drag && view.close.part !== 'teeth') view.yaw += 0.004;   // 寄っている間は、ゆっくり回して文字を読ませる（歯形は止めて、目盛りを見せる）
     holder.rotation.set(view.pitch, view.yaw, 0);
     cam.position.set(0, view.ty, view.dist);
     cam.lookAt(0, view.ty, 0);

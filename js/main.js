@@ -24,7 +24,7 @@ async function goFullscreen() {
 
 // ---- 3Dの読み込み（タイトルを出している間に始める） ----
 const ready = initWorld(f => { $('loadbar').style.width = Math.round(f * 100) + '%'; }).then(w => {
-  for (const id of ['watson', 'holmes', 'mortimer']) {
+  for (const id of ['watson', 'holmes', 'mortimer', 'henry']) {
     const url = figurePortrait(id);
     if (!url) continue;
     setFaceIcon(id, url);

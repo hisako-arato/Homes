@@ -87,7 +87,7 @@ export function buildAlley() {
   for (let i = -2; i <= 2; i++) box(gate, 0.06, 1.0, 0.06, mat('#5a4a36'), 0, 0.2, i * 0.22);
   box(gate, 0.06, 0.12, 0.08, M.iron, 0.08, 0.7, 0.42);   // 錠
   solid(0, 1.0, 8.3, 9.7);
-  thing('gate', '荒野への木戸', [0.6, 0, 9, 0.6, 1.4, 1.3], [1.75, 9], [0.6, 1.8, 9]);
+  thing('gate', '荒野への小さな門', [0.6, 0, 9, 0.6, 1.4, 1.3], [1.75, 9], [0.6, 1.8, 9]);
   // 木戸の向こうの荒野（暗く、霧がかかっている）
   const moor = plane(g, 14, 14, mat('#1c2018'), -7, -0.02, 9);
   moor.receiveShadow = false;
@@ -117,7 +117,7 @@ export function buildAlley() {
   const roof = cyl(sh, 0.2, 1.8, 0.4, mat('#3a3030'), 0, 1.55, 0, 6); roof.scale.z = 0.6;
   box(sh, 1.6, 0.4, 0.4, M.wood, 0, 0.15, 0.3);
   solid(1.6, 4.4, D - 1.4, D);
-  thing('summer', 'あずまや', [3, 0, D - 0.7, 2.6, 1.9, 1.4], [3, D - 1.9]);
+  thing('summer', '庭の休憩小屋', [3, 0, D - 0.7, 2.6, 1.9, 1.4], [3, D - 1.9]);
 
   // ---- 現場の痕跡 ----
   // 館から木戸の前までは、ふつうの靴の跡
@@ -134,13 +134,13 @@ export function buildAlley() {
   // 木戸から先は、つま先だけ。歩幅が広い
   for (let z = 9.8, i = 0; z < 12.6; z += 1.05, i++) putPrint(toeMat, 2.85 + (i % 2) * 0.32, z);
   thing('steps1', '館からの足跡', [2.95, 0, 5, 0.9, 0.05, 2], [3.6, 5], [3, 0.4, 5]);
-  thing('steps2', '木戸から先の足跡', [2.95, 0, 11.2, 0.9, 0.05, 2.0], [3.7, 11.2], [3, 0.4, 11.2]);
+  thing('steps2', '門から先の足跡', [2.95, 0, 11.2, 0.9, 0.05, 2.0], [3.7, 11.2], [3, 0.4, 11.2]);
   // 葉巻の灰（2か所）
   for (const [x, z] of [[2.15, 8.6], [2.3, 9.25]]) {
     const a = cyl(g, 0.05, 0.07, 0.03, mat('#b8b4ac'), x, 0, z, 6);
     a.castShadow = false;
   }
-  thing('ash', '木戸の前の灰', [2.25, 0, 8.9, 0.5, 0.1, 1.0], [3.1, 8.4], [2.25, 0.4, 8.9]);
+  thing('ash', '門の前の灰', [2.25, 0, 8.9, 0.5, 0.1, 1.0], [3.1, 8.4], [2.25, 0.4, 8.9]);
   // 倒れていた場所（並木道の、あずまや寄り）
   const outline = new THREE.Mesh(new THREE.PlaneGeometry(0.9, 1.8), outlineMat);
   outline.rotation.x = -Math.PI / 2; outline.rotation.z = Math.PI + 0.25;

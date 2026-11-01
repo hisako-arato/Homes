@@ -2,6 +2,7 @@
 import { THREE, renderer, scene, camera, CAM_DIR, resize, makeFigure, animateFigure, makeDog, animateDog, M, hemi, sun } from './engine.js';
 import { buildRoom, STREET_Y } from './room.js';
 import { buildAlley } from './alley.js';
+import { buildStreet } from './street.js';
 import { buildNav, findPath } from './nav.js';
 import { loadVRM, driveVRM } from './vrm.js';
 
@@ -13,8 +14,9 @@ const SPEC = {
   watson: { height: 1.76, coat: '#5a4a36', trousers: '#4a4038', vest: '#6a5a40', hair: '#6a4a2a', moustache: '#5a3a1e', skin: '#e8c4a4' },
   holmes: { height: 1.86, gown: '#6e6a62', belt: '#3a2a2a', trousers: '#2e2e32', hair: '#1e1a18', flatHair: true, skin: '#e6cdb6', longNose: true },
   mortimer: { height: 1.9, coat: '#3a3a40', coatLen: 0.55, trousers: '#5a5248', hair: '#8a6a40', skin: '#ecd2bc', glasses: true, longNose: true },
+  henry: { height: 1.72, coat: '#7a6a48', trousers: '#6a5a40', vest: '#5a4a32', hair: '#2a1e16', skin: '#d8a888', sideburns: true },
 };
-export const NAMES = { shizuku: '雫', watson: 'ワトソン', holmes: 'ホームズ', mortimer: 'モーティマー', dog: '犬' };
+export const NAMES = { shizuku: '雫', watson: 'ワトソン', holmes: 'ホームズ', mortimer: 'モーティマー', henry: 'ヘンリー卿', dog: '犬' };
 
 function blob(parent, r = 0.32) {
   const m = new THREE.Mesh(new THREE.CircleGeometry(r, 16), new THREE.MeshBasicMaterial({ color: '#000', transparent: true, opacity: 0.28, depthWrite: false }));
@@ -34,7 +36,8 @@ function addActor(id, g, x, z, kind) {
 export async function initWorld(onProgress) {
   const room = buildRoom();
   const alley = buildAlley();
-  for (const a of [room, alley]) { buildNav(a, a.W, a.D); world.areas[a.id] = a; }
+  const street = buildStreet();
+  for (const a of [room, alley, street]) { buildNav(a, a.W, a.D); world.areas[a.id] = a; }
   world.room = room;
   // 雫（VRM）
   const vrm = await loadVRM(new URL('../assets/vrm/lite/shizuku2.vrm', import.meta.url).href, onProgress);
@@ -42,7 +45,7 @@ export async function initWorld(onProgress) {
   sg.add(vrm.scene);
   const sh = addActor('shizuku', sg, 2.6, 1.3, 'vrm');
   sh.vrm = vrm; sh.speed = 2.3;
-  for (const id of ['watson', 'holmes', 'mortimer']) {
+  for (const id of ['watson', 'holmes', 'mortimer', 'henry']) {
     const a = addActor(id, makeFigure(SPEC[id]), -10, -10, 'fig');
     a.g.visible = false; a.visible = false;
   }
@@ -60,15 +63,55 @@ export function setArea(id) {
   const a = world.areas[id];
   for (const o of Object.values(world.areas)) o.g.visible = o === a;
   world.room = a;
-  const m = a.mood;
-  scene.background.set(m.bg);
-  scene.fog.color.set(m.bg); [scene.fog.near, scene.fog.far] = m.fog;
-  hemi.color.set(m.hemi[0]); hemi.groundColor.set(m.hemi[1]); hemi.intensity = m.hemi[2];
-  sun.intensity = m.sun;
-  if (a.moon) a.moon.intensity = m.moon;
+  sun.position.set(2, 9, -6); sun.target.position.set(0, 0, 0);
+  applyMood(a.mood);
   for (const el of labels.values()) el.style.display = 'none';
   camTarget.set(a.cam.cx, 0.6, a.cam.cz);
   closePicker();
+}
+
+// 明かりと霧（場面の時刻や様子で変える。m.fogColor が無ければ背景の色）
+export function applyMood(m) {
+  const a = world.room;
+  scene.background.set(m.bg);
+  scene.fog.color.set(m.fogColor || m.bg); [scene.fog.near, scene.fog.far] = m.fog;
+  hemi.color.set(m.hemi[0]); hemi.groundColor.set(m.hemi[1]); hemi.intensity = m.hemi[2];
+  sun.intensity = m.sun;
+  if (a.moon) a.moon.intensity = m.moon || 0;
+  if (a.gas) a.gas.intensity = m.gas || 0;
+}
+// 場面の途中で、調べられる物を足す（hit：[x, y, z, 幅, 高さ, 奥行き]、y は底の高さ）
+const hitMat = new THREE.MeshBasicMaterial({ visible: false });
+export function addThing(areaId, id, name, hit, at, label, opt = {}) {
+  const a = world.areas[areaId];
+  const [x, y, z, w, h, d] = hit;
+  const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), hitMat);
+  m.position.set(x, y + h / 2, z);
+  m.userData.thing = id;
+  (opt.parent || a.g).add(m);
+  a.things[id] = { id, name, hit: m, at, label: new THREE.Vector3(...(label || [x, y + h + 0.15, z])), ...opt };
+  return a.things[id];
+}
+export function removeThing(areaId, id) {
+  const a = world.areas[areaId], t = a.things[id];
+  if (!t) return;
+  t.hit.parent && t.hit.parent.remove(t.hit);
+  delete a.things[id];
+  const el = labels.get(areaId + ':' + id);
+  if (el) { el.remove(); labels.delete(areaId + ':' + id); }
+}
+// 選択肢を出して、選ばれた key を返す。options：[[key, 文字], ...]
+export function choose(options) {
+  const box = $('choices');
+  const was = world.locked;
+  world.locked = true;
+  box.innerHTML = options.map(([k, l]) => `<button data-k="${k}">${l}</button>`).join('');
+  box.classList.remove('hidden');
+  return new Promise(res => {
+    box.querySelectorAll('button').forEach(b => {
+      b.onclick = e => { e.stopPropagation(); box.classList.add('hidden'); world.locked = was; res(b.dataset.k); };
+    });
+  });
 }
 
 export function place(id, x, z, face) {
@@ -165,7 +208,7 @@ function tap(cx, cy) {
   const px = v => [(v.x + 1) / 2 * innerWidth, (1 - v.y) / 2 * innerHeight];
   for (const t of Object.values(world.room.things)) {
     if ((!world.sparkle(t.id) || t.hidden) && !world.examined.has(t.id)) continue;   // 用のない物・気づきにくい物は出さない
-    const [x, y] = px(v3.copy(t.hit.position).project(camera));
+    const [x, y] = px(t.hit.getWorldPosition(v3).project(camera));
     const d = Math.hypot(x - cx, y - cy);
     if (d < PICK_PX) cand.set('t:' + t.id, Math.min(cand.get('t:' + t.id) ?? 1e9, d));
   }
@@ -289,6 +332,7 @@ function tick(now) {
   const fl = world.room.fireLight;
   if (fl) fl.intensity = 3.4 + Math.sin(now / 90) * 0.4 + Math.sin(now / 37) * 0.3;
   if (world.room.glow) world.room.glow.position.set(sh.x, 1.8, sh.z);
+  if (world.room.update) world.room.update(dt, sh);
   updateCamera(dt);
   updateLabels();
   renderer.render(scene, world.mode === 'window' ? winCam : camera);
@@ -335,6 +379,7 @@ function updateCamera(dt) {
     const c = world.room.cam;
     tx = c.cx + (sh.x - c.cx) * (portrait ? c.fx : c.lfx);
     tz = c.cz + (sh.z - c.cz) * (portrait ? c.fz : c.lfz);
+    if (c.zmin != null) tz = Math.max(c.zmin, Math.min(c.zmax, tz));   // 場所の端の、何も無い所を映さない
   }
   camTarget.x += (tx - camTarget.x) * Math.min(1, dt * 3);
   camTarget.z += (tz - camTarget.z) * Math.min(1, dt * 3);

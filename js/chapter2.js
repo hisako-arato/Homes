@@ -18,11 +18,11 @@ const narr = text => say(null, text);
 const ALLEY = {
   house: ['バスカヴィル館。窓に、灯りがひとつ。……ここから、散歩に出たんだ'],
   hedge: ['イチイの生け垣。高くて、すき間がない。……ここは通り抜けられない'],
-  summer: ['並木道の突き当たりの、あずまや'],
-  steps1: ['館から木戸の前までは、ふつうの靴の跡'],
-  steps2: ['木戸から先は……つま先だけの跡。それに、歩幅がすごく広い', 'surprised', 'toe'],
-  gate: ['荒野へ出る、低い木戸。錠がかかってる。向こうは真っ暗な荒野……', null, 'gate'],
-  ash: ['木戸の前に、葉巻の灰が2か所。足跡も、ここで重なってる', null, 'ash'],
+  summer: ['並木道の突き当たりにある、庭の休憩小屋'],
+  steps1: ['館から門の前までは、ふつうの靴の跡'],
+  steps2: ['門から先は……つま先だけの跡。かかとが付いてない。それに、歩幅がすごく広い', 'surprised', 'toe'],
+  gate: ['荒野へ出る、低い小さな門。鍵がかかってる。向こうは真っ暗な荒野……', null, 'gate'],
+  ash: ['門の前に、葉巻の灰が2か所。灰が2回落ちるくらい、ここに立ってたのかな。足跡も重なってる', null, 'ash'],
   body: ['ここで、倒れていたんだ……。顔が、ひどくゆがんでいたって', 'sad', 'body'],
   hound: ['……え？ 道の端に、大きな足跡。犬……？ こんなに大きな？', 'surprised', 'hound'],
 };
@@ -90,7 +90,7 @@ function stage() {
   place('shizuku', 3.4, 5.2, -2.4);
 }
 
-function titleCard(chap, name) {
+export function titleCard(chap, name) {
   const c = $('card');
   c.className = 'card chapcard';
   c.innerHTML = `<p class="chap">${chap}</p><h2>${name}</h2><i class="next">▼</i>`;
@@ -100,12 +100,24 @@ function titleCard(chap, name) {
     setTimeout(() => c.addEventListener('pointerup', go), 400);
   });
 }
-async function flash() {
+export async function flash() {
   const c = $('card');
   c.className = 'card flash'; c.innerHTML = '';
   c.classList.remove('hidden');
   await wait(800);
   c.classList.add('hidden');
+}
+
+// 場所と時刻のカード（タップで閉じる）
+export function placeCard(sub, main) {
+  const c = $('card');
+  c.className = 'card placecard';
+  c.innerHTML = `<p class="place">${sub}<br><b>${main}</b></p><i class="next">▼</i>`;
+  c.classList.remove('hidden');
+  return new Promise(res => {
+    const go = () => { c.removeEventListener('pointerup', go); c.classList.add('hidden'); res(); };
+    setTimeout(() => c.addEventListener('pointerup', go), 400);
+  });
 }
 
 async function opening() {
@@ -202,11 +214,11 @@ async function revealScene() {
   await say('holmes', '見たのですか');
   await say('mortimer', '今あなたを見ているのと同じくらい、はっきりと');
   await say('holmes', '死体から、どれくらい離れて？');
-  await say('mortimer', '20ヤードほど。誰も気に留めませんでした');
-  await say('holmes', '足跡は、木戸と同じ側に？');
+  await say('mortimer', '20ヤード……18メートルほど。誰も気に留めませんでした');
+  await say('holmes', '足跡は、門と同じ側に？');
   await say('mortimer', 'はい。道の端に');
-  await say('holmes', '木戸は？');
-  await say('mortimer', '閉まっていて、錠が下りていました。その前に、葉巻の灰が2か所');
+  await say('holmes', '門は？');
+  await say('mortimer', '閉まっていて、鍵がかかっていました。その前に、葉巻の灰が2か所');
   await say('holmes', 'ということは、彼はそこで、しばらく誰かを待っていた');
   await say('holmes', 'そして、つま先立ちで歩いたのではない。必死に走ったのです');
   await say('holmes', '心臓が破れて、倒れるまで');
@@ -220,7 +232,7 @@ async function revealScene() {
 
 async function leaveScene() {
   world.locked = true;
-  await say('mortimer', '実は、相続人のヘンリー卿が、カナダから着くのです。あと1時間ほどで、ウォータールー駅に');
+  await say('mortimer', '実は、跡継ぎのヘンリー卿が、カナダから着くのです。あと1時間ほどで、ウォータールー駅に');
   await say('holmes', '明日の朝10時に、ヘンリー卿と一緒に来てください');
   await say('holmes', 'それまでは、彼には何も言わずに');
   addPerson('mortimer');
@@ -231,7 +243,7 @@ async function leaveScene() {
   door();
   hide('mortimer'); hide('dog');
   faceTo('holmes', 5, 3.4);
-  await say('holmes', 'ワトソン君、出かけるかね。帰りにブラッドリーの店で、いちばん強い刻みたばこを頼むよ');
+  await say('holmes', 'ワトソン君、出かけるかね。帰りにブラッドリーの店で、いちばん強いパイプたばこを買ってきてくれたまえ');
   await say('holmes', '夕方まで、一人で考えたい');
   setPose('watson', null);
   place('watson', 5.05, 4.1);
@@ -263,10 +275,13 @@ async function endCard() {
   const c = $('card');
   c.className = 'card end';
   c.innerHTML = `<p class="chap">第2章</p><h2>バスカヴィル家の呪い</h2><p class="next-ch">つづく ―― 次は、ヘンリー・バスカヴィル卿</p>
-    <button class="primary" id="toTitle">タイトルへ</button>`;
+    <button class="primary" id="toNext">第3章へ</button><button class="ghost" id="toTitle">タイトルへ</button>`;
   c.classList.remove('hidden');
-  await new Promise(res => { $('toTitle').onclick = res; });
-  location.reload();
+  await new Promise(res => {
+    $('toNext').onclick = res;
+    $('toTitle').onclick = () => { S.step = 'c3'; save(); location.reload(); };
+  });
+  c.classList.add('hidden');
 }
 
 export async function runChapter2() {
@@ -282,10 +297,10 @@ export async function runChapter2() {
     if (phase === 'alley') {
       const n = NEED.filter(found).length;
       if (n < NEED.length) {
-        const where = !found('gate') || !found('ash') ? '荒野への木戸のまわり' : !found('toe') ? '木戸から先の、道の上' : '並木道の奥（あずまやの近く）';
+        const where = !found('gate') || !found('ash') ? '荒野への小さな門のまわり' : !found('toe') ? '門から先の、道の上' : '並木道の奥（休憩小屋の近く）';
         return { who: 'shizuku', text: `現場の手がかり ${n} / ${NEED.length}。${where}を、よく見てみよう` };
       }
-      if (!found('hound')) return { who: 'shizuku', text: '4つそろった。……でも、道の端を木戸のあたりからゆっくり歩くと、何かあるかも' };
+      if (!found('hound')) return { who: 'shizuku', text: '4つそろった。……でも、道の端を門のあたりからゆっくり歩くと、何かあるかも' };
       return { who: 'shizuku', text: '現場は調べつくした。「話にもどる」で部屋へ' };
     }
     if (S.step === 'c2quiz') return { who: 'shizuku', text: '推理ノートの手がかりを思い出そう。「手がかりを見直す」で、現場にもどることもできる' };
@@ -294,7 +309,7 @@ export async function runChapter2() {
   };
   for (const id of ['watson', 'holmes', 'mortimer']) addPerson(id);
   stage();
-  if (S.step === 'end2') return endCard();
+  if (S.step === 'end2') { await fade(false); return endCard(); }
   if (S.step === 'c2') { await opening(); S.step = 'c2read'; save(); }
   else await fade(false);
   if (S.step === 'c2read') { await readScene(); S.step = 'c2alley'; save(); }
