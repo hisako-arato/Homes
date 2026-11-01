@@ -125,24 +125,65 @@ function setupInput() {
   view.addEventListener('pointercancel', end);
 }
 
+// タップ：指の近くに調べられる物や人が2つ以上あれば、一覧を出して選ばせる（狙った物を確実に触れるように）
+const PICK_PX = 46;
 function tap(cx, cy) {
+  closePicker();
   if (world.mode === 'window') { world.onWindowTap && world.onWindowTap(); return; }
   if (world.locked) return;
   ndc.set(cx / innerWidth * 2 - 1, -(cy / innerHeight) * 2 + 1);
   ray.setFromCamera(ndc, camera);
   const objs = [world.room.g, ...Object.values(world.actors).filter(a => a.visible && a.id !== 'shizuku').map(a => a.g)];
   const hits = ray.intersectObjects(objs, true);
+  // 候補：光線が当たった物と、画面上で指の近くにある物
+  const cand = new Map();
+  let floorAt = null;
   for (const h of hits) {
     const o = h.object;
-    if (o.userData.actor) return goActor(o.userData.actor);
-    if (o.userData.thing) return goThing(o.userData.thing);
-    if (o.userData.floor) return goFloor(h.point.x, h.point.z);
-    if (o.isMesh && o.material && o.material.visible !== false) {
-      // 家具の天板などをタップしたら、その近くまで歩く
-      return goFloor(h.point.x, h.point.z);
-    }
+    if (o.userData.actor && !cand.has('a:' + o.userData.actor)) cand.set('a:' + o.userData.actor, 0);
+    else if (o.userData.thing && !cand.has('t:' + o.userData.thing)) cand.set('t:' + o.userData.thing, 0);
+    else if (!floorAt && o.isMesh && o.material && o.material.visible !== false) floorAt = [h.point.x, h.point.z];
   }
+  const px = v => [(v.x + 1) / 2 * innerWidth, (1 - v.y) / 2 * innerHeight];
+  for (const t of Object.values(world.room.things)) {
+    if (!world.sparkle(t.id) && !world.examined.has(t.id)) continue;   // 用のない物は出さない
+    const [x, y] = px(v3.copy(t.hit.position).project(camera));
+    const d = Math.hypot(x - cx, y - cy);
+    if (d < PICK_PX) cand.set('t:' + t.id, Math.min(cand.get('t:' + t.id) ?? 1e9, d));
+  }
+  for (const a of Object.values(world.actors)) {
+    if (!a.visible || a.id === 'shizuku' || a.y < -1) continue;
+    const [x, y] = px(v3.set(a.x, 0.9, a.z).project(camera));
+    const d = Math.hypot(x - cx, y - cy);
+    if (d < PICK_PX * 1.3) cand.set('a:' + a.id, Math.min(cand.get('a:' + a.id) ?? 1e9, d));
+  }
+  const list = [...cand.entries()].sort((p, q) => p[1] - q[1]).map(e => e[0]);
+  if (list.length === 1) return goKey(list[0]);
+  if (list.length > 1) return openPicker(list, cx, cy, floorAt);
+  if (floorAt) goFloor(...floorAt);
 }
+const goKey = k => k.startsWith('a:') ? goActor(k.slice(2)) : goThing(k.slice(2));
+function openPicker(list, cx, cy, floorAt) {
+  const el = $('picker');
+  const item = k => {
+    if (k.startsWith('a:')) return `<button data-k="${k}" class="person">👤 ${NAMES[k.slice(2)]}</button>`;
+    const t = world.room.things[k.slice(2)], done = world.examined.has(t.id);
+    return `<button data-k="${k}" class="${done ? 'done' : 'new'}">${done ? '✓' : '✦'} ${t.name}</button>`;
+  };
+  el.innerHTML = list.slice(0, 6).map(item).join('') + (floorAt ? '<button data-k="floor" class="walk">ここまで歩く</button>' : '');
+  el.classList.remove('hidden');
+  const w = el.offsetWidth, h = el.offsetHeight;
+  el.style.left = Math.max(8, Math.min(innerWidth - w - 8, cx - w / 2)) + 'px';
+  el.style.top = Math.max(8, Math.min(innerHeight - h - 8, cy - h - 16)) + 'px';
+  el.querySelectorAll('button').forEach(b => {
+    b.onclick = e => {
+      e.stopPropagation();
+      closePicker();
+      if (b.dataset.k === 'floor') goFloor(...floorAt); else goKey(b.dataset.k);
+    };
+  });
+}
+export function closePicker() { $('picker').classList.add('hidden'); }
 let goal = 0;   // 新しい指示が来たら、前の「着いたら調べる」を取り消す
 function goFloor(x, z) {
   const me = ++goal;
@@ -207,6 +248,7 @@ function tick(now) {
     if (keys.has('arrowdown') || keys.has('s')) mz += 1;
     if (mx || mz) {
       goal++;
+      closePicker();
       sh.path = null;
       // 画面の上下左右を、カメラの向きに合わせた床の向きに直す
       const yaw = Math.atan2(CAM_DIR.x, CAM_DIR.z);
@@ -299,25 +341,34 @@ export function lookOut(x) {
 // ---- 名札（近くの物の名前と、まだ調べていない物の印） ----
 const labels = new Map();
 const v3 = new THREE.Vector3();
+// 名札：いちばん近い物だけ名前を出す（まだ調べていない物は金色、調べ終えた物は灰色に ✓）
+// 雫の近く（3m以内）の物には、印だけを出す（✦ まだ／✓ 済み）
 function updateLabels() {
   const box = $('labels');
   const sh = world.actors.shizuku;
   const show = world.mode === 'follow' && !world.locked;
+  let nearest = null, nd = 1.3;
+  for (const t of Object.values(world.room.things)) {
+    const d = Math.hypot(t.at[0] - sh.x, t.at[1] - sh.z);
+    if (d < nd && (world.sparkle(t.id) || world.examined.has(t.id))) { nd = d; nearest = t.id; }
+  }
   for (const t of Object.values(world.room.things)) {
     let el = labels.get(t.id);
     if (!el) { el = document.createElement('div'); el.className = 'label'; box.append(el); labels.set(t.id, el); }
-    const dist = Math.hypot(t.at[0] - sh.x, t.at[1] - sh.z), near = dist < 1.3;
-    // まだ調べていない物の印は、雫の近く（3m以内）だけに出す（部屋じゅうに出すとうるさい）
-    const fresh = dist < 3 && !world.examined.has(t.id) && world.sparkle(t.id);
-    if (!show || (!near && !fresh)) { el.style.display = 'none'; continue; }
+    const dist = Math.hypot(t.at[0] - sh.x, t.at[1] - sh.z);
+    const done = world.examined.has(t.id), useful = world.sparkle(t.id);
+    const named = t.id === nearest;
+    if (!show || (!named && (dist > 3 || (!useful && !done)))) { el.style.display = 'none'; continue; }
     v3.copy(t.label).project(camera);
     el.style.display = '';
-    el.style.left = ((v3.x + 1) / 2 * innerWidth) + 'px';
-    el.style.top = ((1 - v3.y) / 2 * innerHeight) + 'px';
-    const txt = near ? `▶ ${t.name}` : '✦';
+    const txt = named ? `${done ? '✓' : '✦'} ${t.name}` : done ? '✓' : '✦';
     if (el.textContent !== txt) el.textContent = txt;
-    el.classList.toggle('dot', !near);
-    el.classList.toggle('done', world.examined.has(t.id));
+    // 名前の札は、画面の端からはみ出さないようにずらす
+    const half = named ? el.offsetWidth / 2 + 6 : 0;
+    el.style.left = Math.max(half, Math.min(innerWidth - half, (v3.x + 1) / 2 * innerWidth)) + 'px';
+    el.style.top = ((1 - v3.y) / 2 * innerHeight) + 'px';
+    el.classList.toggle('dot', !named);
+    el.classList.toggle('done', done);
   }
 }
 

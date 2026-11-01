@@ -112,26 +112,36 @@ export function openNotebook() {
 }
 
 // ---- 推理する（絵の選択肢を1問ずつ） ----
+// 「手がかりを見直す」で、いつでも部屋に戻って調べ直せる（そのときは答えを白紙に戻し、false で返す）
 export function deduce() {
   const box = $('deduce');
   box.classList.remove('hidden');
+  const picked = {};
   return new Promise(res => {
     let i = 0;
     const show = () => {
       const q = QUESTIONS[i];
-      const clueRow = S.clues.map(id => `<img src="${iconOf(CLUES[id].icon)}" alt="" title="${CLUES[id].name}">`).join('');
+      const clueRow = S.clues.map(id => `<button class="clue" data-c="${id}"><img src="${iconOf(CLUES[id].icon)}" alt=""></button>`).join('');
       box.innerHTML = `<div class="panel"><p class="qn">推理 ${i + 1} / ${QUESTIONS.length}</p><h3>${q.q}</h3>
-        <div class="clueRow">${clueRow}</div>
+        <div class="clueRow">${clueRow}</div><p class="clueTip" id="clueTip">手がかりをタップすると、中身が見られる</p>
         <div class="opts ${q.id === 'dog' ? 'pics' : ''}">${q.opts.map(([k, label, size]) =>
-          `<button data-k="${k}">${size != null ? `<img src="${dogIcon(size)}" alt="">` : ''}<span>${label.replace(/\n/g, '<br>')}</span></button>`).join('')}</div></div>`;
+          `<button data-k="${k}" class="${picked[q.id] === k ? 'picked' : ''}">${size != null ? `<img src="${dogIcon(size)}" alt="">` : ''}<span>${label.replace(/\n/g, '<br>')}</span></button>`).join('')}</div>
+        <div class="dednav">${i > 0 ? '<button class="ghost" id="dedPrev">← 前の問題</button>' : ''}<button class="ghost" id="dedBack">手がかりを見直す</button></div></div>`;
+      box.querySelectorAll('[data-c]').forEach(b => {
+        b.onclick = () => { const c = CLUES[b.dataset.c]; $('clueTip').innerHTML = `<b>${c.name}</b>　${c.line.replace(/\n/g, '　')}`; };
+      });
       box.querySelectorAll('[data-k]').forEach(b => {
         b.onclick = () => {
-          S.answers[q.id] = b.dataset.k;
+          picked[q.id] = b.dataset.k;
           i++;
-          if (i < QUESTIONS.length) show();
-          else { box.classList.add('hidden'); res(); }
+          if (i < QUESTIONS.length) return show();
+          Object.assign(S.answers, picked);
+          box.classList.add('hidden');
+          res(true);
         };
       });
+      if ($('dedPrev')) $('dedPrev').onclick = () => { i--; show(); };
+      $('dedBack').onclick = () => { box.classList.add('hidden'); res(false); };
     };
     show();
   });

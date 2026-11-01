@@ -101,7 +101,7 @@ async function talk(id) {
       else if (n < 3) await say('watson', 'ほかにも、何かありそうかね？ ゆっくり回して見てごらん');
       else if (!S.answers.cch) {
         await say('watson', 'よし。では、君の推理を聞かせてくれ');
-        await deduce();
+        if (!await deduce()) { await say('watson', 'じっくり見直すといい。決まったら、また声をかけてくれ'); return; }
         await say('watson', 'なるほど。……ホームズが何と言うか、楽しみだね');
         onDeduced && onDeduced();
       } else await say('watson', 'ホームズは、まだ起きてこないな');

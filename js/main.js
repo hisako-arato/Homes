@@ -55,15 +55,23 @@ function title() {
   $('settings').onclick = settings;
 }
 
+let begun = false;
 async function begin() {
-  page();
-  await goFullscreen();
+  if (begun) return;
+  begun = true;
+  try { page(); } catch (_) { /* noop */ }
+  // 全画面・縦向きの固定は、端末によっては返事が来ないことがあるので、長くは待たない
+  await Promise.race([goFullscreen(), new Promise(r => setTimeout(r, 1200))]);
   await ready;
-  startFire();
+  try { startFire(); } catch (_) { /* noop */ }
   $('fade').classList.add('on');
   await new Promise(r => setTimeout(r, 450));
   $('title').classList.add('hidden');
-  runChapter1();
+  runChapter1().catch(e => {
+    $('fade').classList.remove('on');
+    $('modal').innerHTML = `<div class="panel"><p>エラーが起きました。<br><small>${e.message || e}</small></p><button class="primary" onclick="location.reload()">読み込み直す</button></div>`;
+    $('modal').classList.remove('hidden');
+  });
 }
 
 function confirmBox(html) {

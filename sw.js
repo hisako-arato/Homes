@@ -1,5 +1,5 @@
 // オフラインでも遊べるよう、ゲームのファイルをキャッシュする（版を上げると、古いキャッシュは消える）
-const CACHE = 'homes-0.1';
+const CACHE = 'homes-0.2';
 const FILES = [
   './', 'index.html', 'manifest.webmanifest', 'css/style.css',
   'js/main.js', 'js/lockdown.js', 'js/engine.js', 'js/room.js', 'js/play.js', 'js/nav.js', 'js/vrm.js', 'js/inspect.js',
