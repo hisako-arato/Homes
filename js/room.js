@@ -242,7 +242,12 @@ export function buildRoom() {
   g.add(gas);
 
   buildStreet(g);
-  return { g, solids, things, fireLight, gas, W, D };
+  return {
+    id: 'room', g, solids, things, fireLight, gas, W, D,
+    // カメラの中心と、雫に寄せる割合（縦長の画面 fx・fz／横長 lfx・lfz）
+    cam: { cx: 4, cz: 3.4, fx: 0.15, fz: 0.35, lfx: 0.6, lfz: 0.6 },
+    mood: { bg: '#1b1a1e', fog: [31, 41], hemi: ['#f4ecde', '#3a2c28', 1.0], sun: 1.5, moon: 0 },
+  };
 }
 
 // 種を決めた乱数（本の背表紙の幅などに使う）

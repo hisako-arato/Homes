@@ -8,6 +8,7 @@ import { inspectStick } from './inspect.js';
 import { deduce, results, openNotebook } from './notebook.js';
 import { S, save, addClue, addPerson } from './save.js';
 import { chime, bell, door, fanfare, miss } from './audio.js';
+import { runChapter2 } from './chapter2.js';
 
 const $ = id => document.getElementById(id);
 const A = id => world.actors[id];
@@ -15,7 +16,7 @@ const think = (text, mood) => say('shizuku', `（${text}）`, { thought: true, m
 const narr = text => say(null, text);
 
 // ---- 調べたときの一言（雫は推理小説オタク。見るものすべてに興奮する） ----
-const LOOK = {
+export const LOOK = {
   fire: ['本物の暖炉……！ あったかい', 'happy'],
   clock: ['置き時計。まだ朝の早い時間'],
   slipper: ['ペルシャ・スリッパの中に、たばこの葉！ 本当にここに入れてるんだ……！', 'happy'],
@@ -120,7 +121,7 @@ async function talk(id) {
 }
 
 // 物を人物の手に持たせる
-function holdStick(id) {
+export function holdStick(id) {
   for (const a of ['watson', 'holmes']) {
     const f = A(a).g.userData.fig;
     if (f.held) { f.arms[1].remove(f.held); f.held = null; }
@@ -145,7 +146,7 @@ async function opening() {
     const go = () => { c.removeEventListener('pointerup', go); res(); };
     setTimeout(() => c.addEventListener('pointerup', go), 300);
   });
-  await show(`<img class="bigface" src="assets/faces/shizuku.webp" alt=""><p>雫。推理小説オタク。</p>`);
+  await show(`<img class="bigface" src="assets/faces/shizuku2.webp" alt=""><p>雫。推理小説オタク。</p>`);
   await show(`<div class="book"><div class="cover"><small>A. CONAN DOYLE</small><b>THE HOUND<br>OF THE<br>BASKERVILLES</b></div></div><p>今夜の一冊は――<br>『バスカヴィル家の犬』</p>`);
   await show(`<div class="book open"><div class="pg l"></div><div class="pg r"></div></div><p>……ページが、光ってる？</p>`, 'glow');
   c.className = 'card flash';
@@ -335,10 +336,13 @@ async function endCard() {
   const c = $('card');
   c.className = 'card end';
   c.innerHTML = `<p class="chap">第1章</p><h2>シャーロック・ホームズ氏</h2><p class="next-ch">つづく ―― 次は、モーティマー医師の古文書</p>
-    <button class="primary" id="toTitle">タイトルへ</button>`;
+    <button class="primary" id="toNext">第2章へ</button><button class="ghost" id="toTitle">タイトルへ</button>`;
   c.classList.remove('hidden');
-  await new Promise(res => { $('toTitle').onclick = res; });
-  location.reload();
+  await new Promise(res => {
+    $('toNext').onclick = res;
+    $('toTitle').onclick = () => { S.step = 'c2'; save(); location.reload(); };
+  });
+  c.classList.add('hidden');
 }
 
 // ---- 入口 ----
@@ -363,6 +367,15 @@ export async function runChapter1() {
   if (S.step === 'holmes') await holmesScene();
   else if (S.step === 'window') await windowScene();
   await endCard();
+}
+
+// ゲーム全体の入口：セーブの場所から、章を順に進める
+export async function runGame() {
+  if (!S.step.startsWith('c2') && S.step !== 'end2') {
+    await runChapter1();
+    S.step = 'c2'; save();
+  }
+  await runChapter2();
 }
 
 export { THREE };

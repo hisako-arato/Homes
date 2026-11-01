@@ -1,0 +1,28 @@
+<!doctype html>
+<meta charset="utf-8">
+<!-- 雫の顔アイコンを撮るページ（tools/face_icon.mjs から開く） -->
+<canvas id="c" width="256" height="256"></canvas>
+<script type="module">
+import * as THREE from '../vendor/three.module.min.js';
+import { loadVRM, driveVRM } from '../js/vrm.js';
+const canvas = document.getElementById('c');
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true, preserveDrawingBuffer: true });
+const scene = new THREE.Scene();
+scene.add(new THREE.HemisphereLight('#fff4e6', '#6a5a50', 1.7));
+const key = new THREE.DirectionalLight('#ffffff', 1.8);
+key.position.set(0.8, 1.6, 2.4); scene.add(key);
+const camera = new THREE.PerspectiveCamera(15, 1, 0.05, 20);
+window.shoot = async (file, out) => {
+  const vrm = await loadVRM(new URL(file, location.href).href);
+  scene.add(vrm.scene);
+  for (let i = 0; i < 30; i++) driveVRM(vrm, false, 1 / 30, {});
+  vrm.expressionManager.setValue('blink', 0); vrm.expressionManager.update();
+  scene.updateMatrixWorld(true);
+  const head = vrm.humanoid.getNormalizedBoneNode('head').getWorldPosition(new THREE.Vector3());
+  camera.position.set(0, head.y + 0.08, 1.25);
+  camera.lookAt(0, head.y + 0.075, 0);
+  renderer.render(scene, camera);
+  return canvas.toDataURL('image/webp', 0.9);
+};
+window.ready = true;
+</script>

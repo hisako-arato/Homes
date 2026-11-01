@@ -1,11 +1,12 @@
 // 3Dの場面を動かす：人物の移動・タップ・なぞって歩く・カメラ・名札・台詞の欄
-import { THREE, renderer, scene, camera, CAM_DIR, resize, makeFigure, animateFigure, makeDog, animateDog, M } from './engine.js';
+import { THREE, renderer, scene, camera, CAM_DIR, resize, makeFigure, animateFigure, makeDog, animateDog, M, hemi, sun } from './engine.js';
 import { buildRoom, STREET_Y } from './room.js';
+import { buildAlley } from './alley.js';
 import { buildNav, findPath } from './nav.js';
 import { loadVRM, driveVRM } from './vrm.js';
 
 const $ = id => document.getElementById(id);
-export const world = { room: null, actors: {}, mode: 'follow', locked: true, onThing: null, onActor: null, examined: new Set(), sparkle: () => true };
+export const world = { room: null, areas: {}, actors: {}, mode: 'follow', locked: true, onThing: null, onActor: null, examined: new Set(), sparkle: () => true };
 
 // ---- 人物 ----
 const SPEC = {
@@ -32,10 +33,11 @@ function addActor(id, g, x, z, kind) {
 
 export async function initWorld(onProgress) {
   const room = buildRoom();
+  const alley = buildAlley();
+  for (const a of [room, alley]) { buildNav(a, a.W, a.D); world.areas[a.id] = a; }
   world.room = room;
-  buildNav(room, room.W, room.D);
   // 雫（VRM）
-  const vrm = await loadVRM(new URL('../assets/vrm/shizuku.vrm', import.meta.url).href, onProgress);
+  const vrm = await loadVRM(new URL('../assets/vrm/lite/shizuku2.vrm', import.meta.url).href, onProgress);
   const sg = new THREE.Group();
   sg.add(vrm.scene);
   const sh = addActor('shizuku', sg, 2.6, 1.3, 'vrm');
@@ -51,6 +53,22 @@ export async function initWorld(onProgress) {
   setupInput();
   requestAnimationFrame(tick);
   return world;
+}
+
+// 場面（エリア）を切り替える：見える物・歩ける場所・明かり・カメラが入れ替わる
+export function setArea(id) {
+  const a = world.areas[id];
+  for (const o of Object.values(world.areas)) o.g.visible = o === a;
+  world.room = a;
+  const m = a.mood;
+  scene.background.set(m.bg);
+  scene.fog.color.set(m.bg); [scene.fog.near, scene.fog.far] = m.fog;
+  hemi.color.set(m.hemi[0]); hemi.groundColor.set(m.hemi[1]); hemi.intensity = m.hemi[2];
+  sun.intensity = m.sun;
+  if (a.moon) a.moon.intensity = m.moon;
+  for (const el of labels.values()) el.style.display = 'none';
+  camTarget.set(a.cam.cx, 0.6, a.cam.cz);
+  closePicker();
 }
 
 export function place(id, x, z, face) {
@@ -146,7 +164,7 @@ function tap(cx, cy) {
   }
   const px = v => [(v.x + 1) / 2 * innerWidth, (1 - v.y) / 2 * innerHeight];
   for (const t of Object.values(world.room.things)) {
-    if (!world.sparkle(t.id) && !world.examined.has(t.id)) continue;   // 用のない物は出さない
+    if ((!world.sparkle(t.id) || t.hidden) && !world.examined.has(t.id)) continue;   // 用のない物・気づきにくい物は出さない
     const [x, y] = px(v3.copy(t.hit.position).project(camera));
     const d = Math.hypot(x - cx, y - cy);
     if (d < PICK_PX) cand.set('t:' + t.id, Math.min(cand.get('t:' + t.id) ?? 1e9, d));
@@ -269,7 +287,8 @@ function tick(now) {
   }
   // 暖炉の火のゆらぎ
   const fl = world.room.fireLight;
-  fl.intensity = 3.4 + Math.sin(now / 90) * 0.4 + Math.sin(now / 37) * 0.3;
+  if (fl) fl.intensity = 3.4 + Math.sin(now / 90) * 0.4 + Math.sin(now / 37) * 0.3;
+  if (world.room.glow) world.room.glow.position.set(sh.x, 1.8, sh.z);
   updateCamera(dt);
   updateLabels();
   renderer.render(scene, world.mode === 'window' ? winCam : camera);
@@ -313,8 +332,9 @@ function updateCamera(dt) {
   if (focus.on) { tx = focus.x; tz = focus.z; zoom = focus.zoom; }
   else {
     // 縦長の画面では部屋の幅がほぼ収まるので、雫に少しだけ寄せる
-    tx = 4 + (sh.x - 4) * (portrait ? 0.15 : 0.6);
-    tz = 3.4 + (sh.z - 3.5) * (portrait ? 0.35 : 0.6);
+    const c = world.room.cam;
+    tx = c.cx + (sh.x - c.cx) * (portrait ? c.fx : c.lfx);
+    tz = c.cz + (sh.z - c.cz) * (portrait ? c.fz : c.lfz);
   }
   camTarget.x += (tx - camTarget.x) * Math.min(1, dt * 3);
   camTarget.z += (tz - camTarget.z) * Math.min(1, dt * 3);
@@ -353,10 +373,11 @@ function updateLabels() {
     if (d < nd && (world.sparkle(t.id) || world.examined.has(t.id))) { nd = d; nearest = t.id; }
   }
   for (const t of Object.values(world.room.things)) {
-    let el = labels.get(t.id);
-    if (!el) { el = document.createElement('div'); el.className = 'label'; box.append(el); labels.set(t.id, el); }
+    const key = world.room.id + ':' + t.id;
+    let el = labels.get(key);
+    if (!el) { el = document.createElement('div'); el.className = 'label'; box.append(el); labels.set(key, el); }
     const dist = Math.hypot(t.at[0] - sh.x, t.at[1] - sh.z);
-    const done = world.examined.has(t.id), useful = world.sparkle(t.id);
+    const done = world.examined.has(t.id), useful = world.sparkle(t.id) && !t.hidden;
     const named = t.id === nearest;
     if (!show || (!named && (dist > 3 || (!useful && !done)))) { el.style.display = 'none'; continue; }
     v3.copy(t.label).project(camera);

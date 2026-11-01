@@ -1,7 +1,7 @@
 // 起動：タイトル・設定（ホーム画面に追加・全画面・更新）・3Dの読み込み・第1章
 import './lockdown.js';
 import { initWorld, setFaceIcon, figurePortrait } from './play.js';
-import { runChapter1 } from './story.js';
+import { runGame } from './story.js';
 import { S, load, hasSave, reset } from './save.js';
 import { VERSION, VERSION_DATE } from './version.js';
 import { isMuted, setMuted, startFire, page } from './audio.js';
@@ -33,8 +33,8 @@ const ready = initWorld(f => { $('loadbar').style.width = Math.round(f * 100) + 
     setFaceIcon(id, url);
     const img = document.createElement('img'); img.src = url; img.dataset.id = id; $('faces').append(img);
   }
-  setFaceIcon('shizuku', 'assets/faces/shizuku.webp');
-  const img = document.createElement('img'); img.src = 'assets/faces/shizuku.webp'; img.dataset.id = 'shizuku'; $('faces').append(img);
+  setFaceIcon('shizuku', 'assets/faces/shizuku2.webp');
+  const img = document.createElement('img'); img.src = 'assets/faces/shizuku2.webp'; img.dataset.id = 'shizuku'; $('faces').append(img);
   $('loading').classList.add('hidden');
   $('titleMenu').classList.remove('hidden');
   return w;
@@ -67,7 +67,7 @@ async function begin() {
   $('fade').classList.add('on');
   await new Promise(r => setTimeout(r, 450));
   $('title').classList.add('hidden');
-  runChapter1().catch(e => {
+  runGame().catch(e => {
     $('fade').classList.remove('on');
     $('modal').innerHTML = `<div class="panel"><p>エラーが起きました。<br><small>${e.message || e}</small></p><button class="primary" onclick="location.reload()">読み込み直す</button></div>`;
     $('modal').classList.remove('hidden');

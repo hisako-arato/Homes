@@ -1,5 +1,5 @@
 // 雫（読者）の VRM：読み込みと動き（歩く・立つ・まばたき・手を振る・表情）
-// assets/vrm/shizuku.vrm は Oyashiki の assets/vrm/lite/black.vrm（テクスチャ512px の軽い版）と同じもの
+// assets/vrm/lite/shizuku2.vrm は assets/vrm/shizuku2.vrm（VRoid Studio で作成）を tools/vrm_lite.py で軽くしたもの（テクスチャ512px）
 import * as THREE from '../vendor/three.module.min.js';
 import { GLTFLoader } from '../vendor/GLTFLoader.js';
 import { VRMLoaderPlugin, VRMUtils } from '../vendor/three-vrm.module.min.js';
