@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#14100f">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="バスカヴィル">
+  <meta name="description" content="『バスカヴィル家の犬』の世界に入り込んだ読者・雫が、ワトソンと一緒に事件を見届ける3D推理ゲーム">
+  <title>バスカヴィル家の犬 ― 読者・雫の事件簿</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icons/icon-192.png">
+  <link rel="apple-touch-icon" href="icons/icon-180.png">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <canvas id="view"></canvas>
+  <div id="labels"></div>
+  <div id="stick" class="stick"><i></i></div>
+  <button id="noteBtn" class="hidden">推理ノート</button>
+  <div id="msg" class="msg hidden"></div>
+  <div id="toast"></div>
+  <div id="fade"></div>
+  <div id="card" class="card hidden"></div>
+
+  <div id="inspect" class="hidden">
+    <canvas id="inspectView"></canvas>
+    <p class="ihelp">なぞって回す　／　光る所をタップ</p>
+    <p id="inspectCount"></p>
+    <p id="inspectCap"></p>
+    <button id="inspectBack">もどる</button>
+  </div>
+  <div id="note" class="overlay hidden"></div>
+  <div id="deduce" class="overlay hidden"></div>
+
+  <div id="title">
+    <div class="tbox">
+      <p class="en">THE HOUND OF THE BASKERVILLES</p>
+      <h1>バスカヴィル家の犬</h1>
+      <p class="sub">読者・雫の事件簿</p>
+      <div id="loading">ベーカー街を準備しています……<div class="bar"><i id="loadbar"></i></div></div>
+      <div id="titleMenu" class="menu hidden">
+        <button id="start">はじめから</button>
+        <button id="continue" class="hidden">つづきから</button>
+        <button id="settings" class="ghost">設定・アプリにする</button>
+      </div>
+      <p class="ver" id="ver"></p>
+    </div>
+  </div>
+  <div id="modal" class="overlay hidden"></div>
+  <div id="faces" hidden></div>
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>
