@@ -172,7 +172,7 @@ export function buildAlley() {
   g.add(glow);
 
   return {
-    id: 'alley', g, solids, things, W, D, lamp, moon, glow,
+    id: 'alley', name: 'イチイの並木道（話の中）', g, solids, things, W, D, lamp, moon, glow,
     start: [3, 1.7],
     cam: { cx: 3, cz: 8.5, fx: 0.15, fz: 0.7, lfx: 0.6, lfz: 0.8 },
     mood: { bg: '#0d1220', fog: [28, 46], hemi: ['#8a9ac8', '#1a1a24', 1.0], sun: 0, moon: 1.8 },

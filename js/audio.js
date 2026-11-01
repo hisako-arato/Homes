@@ -1,11 +1,23 @@
 // 効果音（WebAudio で合成する。音のファイルは使わない）
-let ctx = null, muted = false;
-try { muted = localStorage.getItem('homes-mute') === '1'; } catch (_) { /* noop */ }
+let ctx = null, muted = false, master = 0.8;
+try {
+  muted = localStorage.getItem('homes-mute') === '1';
+  const v = parseFloat(localStorage.getItem('homes-volume'));
+  if (!isNaN(v)) master = v;
+} catch (_) { /* noop */ }
 export const isMuted = () => muted;
+export const getVolume = () => master;
+const fireLevel = () => (muted ? 0 : 0.035 * master / 0.8);
 export function setMuted(m) {
   muted = m;
   try { localStorage.setItem('homes-mute', m ? '1' : '0'); } catch (_) { /* noop */ }
-  if (fireNode) fireNode.gain.value = m ? 0 : 0.035;
+  if (fireNode) fireNode.gain.value = fireLevel();
+}
+// 音量（0〜1）
+export function setVolume(v) {
+  master = v;
+  try { localStorage.setItem('homes-volume', String(v)); } catch (_) { /* noop */ }
+  if (fireNode) fireNode.gain.value = fireLevel();
 }
 function ac() {
   if (!ctx) { try { ctx = new (window.AudioContext || window.webkitAudioContext)(); } catch (_) { return null; } }
@@ -20,7 +32,7 @@ function tone(freq, t0, dur, type = 'sine', vol = 0.15) {
   const o = c.createOscillator(), g = c.createGain();
   o.type = type; o.frequency.value = freq;
   g.gain.setValueAtTime(0, c.currentTime + t0);
-  g.gain.linearRampToValueAtTime(vol, c.currentTime + t0 + 0.01);
+  g.gain.linearRampToValueAtTime(vol * master / 0.8, c.currentTime + t0 + 0.01);
   g.gain.exponentialRampToValueAtTime(0.0001, c.currentTime + t0 + dur);
   o.connect(g).connect(c.destination);
   o.start(c.currentTime + t0); o.stop(c.currentTime + t0 + dur + 0.05);
@@ -30,7 +42,7 @@ function noise(dur, vol, filter = 2000, t0 = 0) {
   const n = c.sampleRate * dur, b = c.createBuffer(1, n, c.sampleRate), d = b.getChannelData(0);
   for (let i = 0; i < n; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / n);
   const s = c.createBufferSource(), f = c.createBiquadFilter(), g = c.createGain();
-  s.buffer = b; f.type = 'bandpass'; f.frequency.value = filter; g.gain.value = vol;
+  s.buffer = b; f.type = 'bandpass'; f.frequency.value = filter; g.gain.value = vol * master / 0.8;
   s.connect(f).connect(g).connect(c.destination);
   s.start(c.currentTime + t0);
 }
@@ -54,7 +66,7 @@ export function startFire() {
   const n = c.sampleRate * 2, b = c.createBuffer(1, n, c.sampleRate), d = b.getChannelData(0);
   for (let i = 0; i < n; i++) d[i] = (Math.random() * 2 - 1) * 0.25 + (Math.random() < 0.0006 ? (Math.random() * 2 - 1) * 4 : 0);
   const s = c.createBufferSource(), f = c.createBiquadFilter(), g = c.createGain();
-  s.buffer = b; s.loop = true; f.type = 'lowpass'; f.frequency.value = 900; g.gain.value = muted ? 0 : 0.035;
+  s.buffer = b; s.loop = true; f.type = 'lowpass'; f.frequency.value = 900; g.gain.value = fireLevel();
   s.connect(f).connect(g).connect(c.destination);
   s.start();
   fireNode = g;

@@ -201,7 +201,7 @@ async function meetWatson() {
 async function explore() {
   holmesHere = false;
   world.locked = false;
-  $('noteBtn').classList.remove('hidden');
+  $('noteBtn').classList.remove('hidden'); $('menuBtn').classList.remove('hidden');
   toast('なぞって歩く　／　タップで調べる<br><small>✦ はまだ調べていない物</small>', 4200);
   if (!S.answers.cch) await new Promise(res => { onDeduced = res; });
   onDeduced = null;
@@ -353,6 +353,17 @@ export async function runChapter1() {
   // 調べ終えた物と、もう用のない物には印を出さない
   world.sparkle = id => !(id === 'stick' && !world.room.things.stick.model.visible) && !(id === 'hdoor' && holmesHere);
   $('noteBtn').onclick = () => openNotebook();
+  world.hint = () => {
+    const n = STICK_SPOTS.filter(s => S.clues.includes(s.id)).length;
+    if (S.step === 'explore') {
+      if (n === 0) return { who: 'watson', text: '帽子掛けのところのステッキを、手に取って見てごらん' };
+      if (n < 3) return { who: 'watson', text: `ステッキをなぞって回し、光る所を探すといい。あと ${3 - n} つだ` };
+      return { who: 'watson', text: '手がかりはそろったね。私に話しかけてくれれば、君の推理を聞こう' };
+    }
+    if (S.step === 'window' && windowHook) return { who: 'shizuku', text: 'ホームズが窓の外を見てる……。わたしも、窓から通りを見てみよう' };
+    if (world.locked) return { who: 'shizuku', text: '今は、ホームズとワトソン先生の話を聞こう' };
+    return null;
+  };
   if (S.step === 'intro') {
     await opening();
     await meetWatson();
@@ -363,7 +374,7 @@ export async function runChapter1() {
     await fade(false);
   }
   if (S.step === 'explore') await explore();
-  $('noteBtn').classList.remove('hidden');
+  $('noteBtn').classList.remove('hidden'); $('menuBtn').classList.remove('hidden');
   if (S.step === 'holmes') await holmesScene();
   else if (S.step === 'window') await windowScene();
   await endCard();

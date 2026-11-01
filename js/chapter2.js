@@ -275,8 +275,23 @@ export async function runChapter2() {
   world.examined = new Set(S.examined);
   world.sparkle = id => id !== 'stick' && id !== 'hdoor';
   $('noteBtn').onclick = () => openNotebook();
-  $('noteBtn').classList.remove('hidden');
+  $('noteBtn').classList.remove('hidden'); $('menuBtn').classList.remove('hidden');
   $('backBtn').onclick = () => { if (phase === 'alley' && !busy) onBack && onBack(); };
+  world.hint = () => {
+    if (phase === 'wait-read') return { who: 'shizuku', text: 'モーティマー先生の手元を、のぞきこんでみよう（先生をタップ）' };
+    if (phase === 'alley') {
+      const n = NEED.filter(found).length;
+      if (n < NEED.length) {
+        const where = !found('gate') || !found('ash') ? '荒野への木戸のまわり' : !found('toe') ? '木戸から先の、道の上' : '並木道の奥（あずまやの近く）';
+        return { who: 'shizuku', text: `現場の手がかり ${n} / ${NEED.length}。${where}を、よく見てみよう` };
+      }
+      if (!found('hound')) return { who: 'shizuku', text: '4つそろった。……でも、道の端を木戸のあたりからゆっくり歩くと、何かあるかも' };
+      return { who: 'shizuku', text: '現場は調べつくした。「話にもどる」で部屋へ' };
+    }
+    if (S.step === 'c2quiz') return { who: 'shizuku', text: '推理ノートの手がかりを思い出そう。「手がかりを見直す」で、現場にもどることもできる' };
+    if (world.locked) return { who: 'shizuku', text: '今は、モーティマー先生の話を聞こう' };
+    return null;
+  };
   for (const id of ['watson', 'holmes', 'mortimer']) addPerson(id);
   stage();
   if (S.step === 'end2') return endCard();

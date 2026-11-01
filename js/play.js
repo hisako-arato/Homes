@@ -347,6 +347,20 @@ function updateCamera(dt) {
   winCam.updateProjectionMatrix();
 }
 
+// 今の画面の小さな絵（セーブのスロットに付ける）
+export function snapshot(w = 120, h = 200) {
+  renderer.render(scene, world.mode === 'window' ? winCam : camera);
+  const src = renderer.domElement, c = document.createElement('canvas');
+  c.width = w; c.height = h;
+  const g = c.getContext('2d');
+  // 縦横の比を保って、真ん中を切り抜く
+  const k = Math.max(w / src.width, h / src.height), sw = w / k, sh = h / k;
+  g.drawImage(src, (src.width - sw) / 2, (src.height - sh) / 2, sw, sh, 0, 0, w, h);
+  return c.toDataURL('image/jpeg', 0.7);
+}
+// 地図から行き先を選んだとき：そこまで歩いて調べる
+export function goTo(id) { if (!world.locked) goThing(id); }
+
 // 窓から外を見る（窓の前に立ち、通りを見下ろす）
 export function lookOut(x) {
   world.mode = 'window';
@@ -397,7 +411,14 @@ function updateLabels() {
 const FACES = {};
 export function setFaceIcon(id, url) { FACES[id] = url; }
 // say('watson', '……') 。thought：心の声（雫）。タップで次へ
+// 会話の履歴（メニューの「会話の履歴」で見返す。新しい順に200件まで）
+export const history = [];
+try { history.push(...(JSON.parse(localStorage.getItem('homes-log')) || [])); } catch (_) { /* noop */ }
+export const clearHistory = () => { history.length = 0; try { localStorage.removeItem('homes-log'); } catch (_) { /* noop */ } };
 export function say(who, text, opt = {}) {
+  history.push({ who, text, thought: !!opt.thought });
+  if (history.length > 200) history.shift();
+  try { localStorage.setItem('homes-log', JSON.stringify(history)); } catch (_) { /* noop */ }
   const box = $('msg');
   box.classList.remove('hidden');
   box.classList.toggle('thought', !!opt.thought);

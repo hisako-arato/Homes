@@ -99,9 +99,51 @@ export const PERSONS = {
   watson: { name: 'ワトソン', line: '医師。ホームズの相棒で記録係。\n雫が見える、ただ一人の人' },
   holmes: { name: 'シャーロック・ホームズ', line: '探偵。\n雫のことは見えていない' },
   mortimer: { name: 'ジェームズ・モーティマー', line: 'ステッキの持ち主。\nデヴォン州の医師' },
+  charles: { name: 'サー・チャールズ・バスカヴィル', line: 'バスカヴィル家の当主。\n並木道で急死（故人）' },
+  henry: { name: 'ヘンリー・バスカヴィル卿', line: '相続人。カナダから\nロンドンに着いたばかり' },
+  hugo: { name: 'ヒューゴ・バスカヴィル', line: '1742年の伝説の当主。\n魔犬に襲われた' },
 };
+// 相関図に出す人：会った人と、話に出てきた人
+function knownPersons() {
+  const ids = ['shizuku', ...S.persons];
+  if (S.clues.includes('legend')) ids.push('hugo');
+  if (S.clues.includes('paper')) ids.push('charles');
+  if (['c2leave', 'end2'].includes(S.step)) ids.push('henry');
+  return [...new Set(ids)];
+}
+// 人物の相関図（SVG）。位置は固定、線は両端の人がそろったときだけ引く
+const NODE = { shizuku: [50, 150], watson: [170, 46], holmes: [310, 46], mortimer: [310, 176], charles: [170, 200], henry: [170, 316], hugo: [50, 316] };
+const LABEL = { shizuku: '雫', watson: 'ワトソン', holmes: 'ホームズ', mortimer: 'モーティマー', charles: 'サー・チャールズ', henry: 'ヘンリー卿', hugo: 'ヒューゴ' };
+const EDGES = [
+  ['shizuku', 'watson', '話せる'], ['shizuku', 'holmes', '見えない', true], ['watson', 'holmes', '相棒'],
+  ['mortimer', 'holmes', '相談'], ['mortimer', 'charles', '主治医・友人'], ['charles', 'henry', '甥・相続人'], ['hugo', 'charles', '先祖', true],
+];
+function relationChart() {
+  const ids = knownPersons();
+  const has = id => ids.includes(id);
+  const face = id => { const f = document.querySelector(`#faces img[data-id="${id}"]`); return f ? f.src : ''; };
+  let svg = '<svg viewBox="0 0 360 370" class="chart"><defs>';
+  for (const id of ids) svg += `<clipPath id="cp-${id}"><circle cx="${NODE[id][0]}" cy="${NODE[id][1]}" r="24"/></clipPath>`;
+  svg += '</defs>';
+  for (const [a, b, l, dash] of EDGES) {
+    if (!has(a) || !has(b)) continue;
+    const [x1, y1] = NODE[a], [x2, y2] = NODE[b];
+    svg += `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="#8a7a5a" stroke-width="2" ${dash ? 'stroke-dasharray="5 4"' : ''}/>`;
+    const mx = (x1 + x2) / 2, my = (y1 + y2) / 2;
+    svg += `<rect x="${mx - l.length * 6 - 4}" y="${my - 9}" width="${l.length * 12 + 8}" height="18" rx="9" fill="#1a1411" stroke="#5a4a3a"/>`;
+    svg += `<text x="${mx}" y="${my + 4}" text-anchor="middle" font-size="11" fill="#e8dcc6">${l}</text>`;
+  }
+  for (const id of ids) {
+    const [x, y] = NODE[id], src = face(id), dead = id === 'charles' || id === 'hugo';
+    svg += `<circle cx="${x}" cy="${y}" r="26" fill="#3a2e28" stroke="${id === 'shizuku' ? '#ff8aa8' : '#e3c06f'}" stroke-width="2"/>`;
+    svg += src ? `<image href="${src}" x="${x - 24}" y="${y - 24}" width="48" height="48" clip-path="url(#cp-${id})"/>`
+      : `<text x="${x}" y="${y + 7}" text-anchor="middle" font-size="20" fill="${dead ? '#8a8a8a' : '#e8dcc6'}">${LABEL[id][0]}</text>`;
+    svg += `<text x="${x}" y="${y + 42}" text-anchor="middle" font-size="12" fill="#e3c06f">${LABEL[id]}${dead ? ' †' : ''}</text>`;
+  }
+  return svg + '</svg>';
+}
 const iconCache = {};
-const iconOf = id => iconCache[id] || (iconCache[id] = ICONS[id]());
+export const iconOf = id => iconCache[id] || (iconCache[id] = ICONS[id]());
 
 // 犬の影絵（小・中・大）
 function dogIcon(size) {
@@ -170,7 +212,7 @@ export function openNotebook() {
   box.classList.remove('hidden');
   let tab = 'clue';
   const render = () => {
-    const tabs = [['clue', '手がかり'], ['person', '人物'], ['ded', '推理']];
+    const tabs = [['clue', '手がかり'], ['person', '人物・相関図'], ['ded', '推理']];
     let body = '';
     if (tab === 'clue') {
       body = S.clues.length ? `<div class="cards">${S.clues.map(id => {
@@ -178,10 +220,11 @@ export function openNotebook() {
         return `<div class="ccard"><img src="${iconOf(c.icon)}" alt=""><b>${c.name}</b><small>${c.line.replace(/\n/g, '<br>')}</small></div>`;
       }).join('')}</div>` : '<p class="empty">まだ何もない。部屋を調べてみよう。</p>';
     } else if (tab === 'person') {
-      body = `<div class="cards">${S.persons.map(id => {
+      body = relationChart() + `<div class="cards">${knownPersons().filter(id => PERSONS[id]).map(id => {
         const p = PERSONS[id];
         const face = document.querySelector(`#faces img[data-id="${id}"]`);
-        return `<div class="ccard person"><img src="${face ? face.src : ''}" alt=""><b>${p.name}</b><small>${p.line.replace(/\n/g, '<br>')}</small></div>`;
+        const pic = face ? `<img src="${face.src}" alt="">` : `<span class="noface">${p.name.replace(/^サー・|^ヘンリー・/, '')[0]}</span>`;
+        return `<div class="ccard person">${pic}<b>${p.name}</b><small>${p.line.replace(/\n/g, '<br>')}</small></div>`;
       }).join('')}</div>`;
     } else {
       const done = ALLQ().filter(q => S.answers[q.id]);

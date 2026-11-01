@@ -1,5 +1,5 @@
 // セーブ（端末の localStorage。章の区切りごとに書く）
-const KEY = 'homes-save-v1';
+export const KEY = 'homes-save-v1';
 export const S = { step: 'intro', clues: [], examined: [], answers: {}, persons: [] };
 export function hasSave() {
   try { return !!localStorage.getItem(KEY); } catch (_) { return false; }

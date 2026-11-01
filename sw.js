@@ -1,9 +1,9 @@
 // オフラインでも遊べるよう、ゲームのファイルをキャッシュする（版を上げると、古いキャッシュは消える）
-const CACHE = 'homes-0.3';
+const CACHE = 'homes-0.4';
 const FILES = [
   './', 'index.html', 'manifest.webmanifest', 'css/style.css',
   'js/main.js', 'js/lockdown.js', 'js/engine.js', 'js/room.js', 'js/play.js', 'js/nav.js', 'js/vrm.js', 'js/inspect.js',
-  'js/notebook.js', 'js/story.js', 'js/chapter2.js', 'js/alley.js', 'js/legend.js', 'js/save.js', 'js/audio.js', 'js/version.js',
+  'js/notebook.js', 'js/story.js', 'js/chapter2.js', 'js/alley.js', 'js/legend.js', 'js/menu.js', 'js/save.js', 'js/audio.js', 'js/version.js',
   'vendor/three.module.min.js', 'vendor/GLTFLoader.js', 'vendor/BufferGeometryUtils.js', 'vendor/three-vrm.module.min.js',
   'assets/vrm/lite/shizuku2.vrm', 'assets/faces/shizuku2.webp',
   'icons/icon-180.png', 'icons/icon-192.png', 'icons/icon-512.png', 'icons/icon-512-maskable.png',

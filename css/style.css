@@ -47,7 +47,7 @@ button.primary { width: 100%; margin-top: 12px; background: var(--gold); color: 
 .stick.on { opacity: 1; }
 .stick i { position: absolute; left: 35px; top: 35px; width: 40px; height: 40px; border-radius: 50%; background: rgba(227,192,111,.6); }
 
-#noteBtn { position: fixed; top: calc(10px + var(--safe-t)); right: 10px; z-index: 6; padding: 6px 12px; font-size: 13px; background: rgba(40, 28, 24, .9); }
+#noteBtn { position: fixed; top: calc(10px + var(--safe-t)); right: 60px; z-index: 6; padding: 6px 12px; font-size: 13px; background: rgba(40, 28, 24, .9); }
 
 /* 台詞の欄 */
 .msg { position: fixed; left: 50%; bottom: calc(14px + var(--safe-b)); transform: translateX(-50%); width: min(560px, calc(100% - 24px)); z-index: 7;
@@ -207,3 +207,72 @@ button.primary { width: 100%; margin-top: 12px; background: var(--gold); color: 
 #view.shock { animation: shock .5s ease; }
 @keyframes shock { 20% { transform: translate(-6px, 2px); filter: brightness(.6) sepia(1) hue-rotate(-40deg) saturate(3); } 40% { transform: translate(5px, -2px); } 60% { transform: translate(-3px, 1px); } 100% { transform: none; } }
 .card.end .ghost { width: min(260px, 100%); margin-top: 10px; }
+
+/* メニュー（≡） */
+#menuBtn { position: fixed; top: calc(10px + var(--safe-t)); right: 10px; z-index: 6; width: 42px; height: 34px; padding: 0; font-size: 20px; line-height: 1; background: rgba(40, 28, 24, .9); }
+#modal { z-index: 20; }
+.panel.tall { max-height: calc(100% - 20px); display: flex; flex-direction: column; }
+.panel.tall > .log, .panel.tall > .recap, .panel.tall > .help { overflow-y: auto; flex: 1; min-height: 0; }
+.panel.menu .where { text-align: center; margin: 0 0 12px; color: var(--muted); font-size: 13px; }
+.panel.menu .where b { color: var(--gold); font-size: 15px; }
+.mgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.mgrid button { display: flex; align-items: center; gap: 8px; padding: 10px; font-size: 14px; background: #2e2420; border-color: var(--line); text-align: left; }
+.mgrid button i { font-style: normal; font-size: 18px; }
+button.wide { width: 100%; margin-top: 10px; }
+.hintbox { display: flex; gap: 12px; align-items: flex-start; background: #1a1411; border: 1px solid var(--line); border-radius: 10px; padding: 12px; }
+.hintbox img, .lrow img { width: 52px; height: 52px; border-radius: 50%; border: 2px solid var(--gold); object-fit: cover; background: #3a2e28; flex: none; }
+.hintbox b, .lrow b { color: var(--gold); font-size: 13px; }
+.hintbox p { margin: 2px 0 0; }
+.log { display: flex; flex-direction: column; gap: 8px; }
+.lrow { display: flex; gap: 10px; align-items: flex-start; }
+.lrow img { width: 40px; height: 40px; }
+.lrow p { margin: 0; font-size: 14px; line-height: 1.55; }
+.lrow.th p { color: #e8dcff; }
+.lrow.narr { justify-content: center; }
+.lrow.narr p { color: var(--muted); font-size: 13px; text-align: center; }
+.mapname { text-align: center; color: var(--muted); font-size: 13px; margin: -4px 0 8px; }
+#mapc { display: block; margin: 0 auto; border-radius: 6px; cursor: pointer; }
+.maplegend { text-align: center; font-size: 12px; margin: 8px 0 0; }
+.maplegend .g, .help .g { color: #ffe9a8; } .maplegend .d, .help .d { color: #9a948c; } .maplegend .me { color: #ff8aa8; }
+.slot { display: flex; gap: 10px; align-items: center; width: 100%; margin: 6px 0; padding: 8px; text-align: left; background: #1a1411; border: 1px solid var(--line); border-radius: 8px; }
+.slot.auto { border-style: dashed; }
+.slot img, .slot .noimg { width: 48px; height: 80px; object-fit: cover; border-radius: 4px; background: #2e2420; flex: none; }
+.slot .sl { display: flex; flex-direction: column; font-size: 14px; }
+.slot em { font-style: normal; font-size: 11px; color: var(--muted); }
+.slot b { color: var(--gold); }
+.slot small { color: var(--muted); font-size: 11px; }
+.slot .emptys { color: var(--muted); font-weight: normal; }
+.slot:disabled { opacity: .45; }
+.recap h4, .panel h4 { color: var(--gold); margin: 12px 0 6px; font-size: 14px; border-bottom: 1px solid var(--line); padding-bottom: 4px; }
+.rcards { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.rcard { background: #1a1411; border: 1px solid var(--line); border-radius: 8px; padding: 8px; text-align: center; animation: pop .3s ease; }
+.rcard img { width: 64px; height: 64px; }
+.rcard img.round { border-radius: 50%; border: 2px solid var(--gold); object-fit: cover; }
+.rcard p { margin: 4px 0 0; font-size: 12px; line-height: 1.5; }
+.rate { text-align: center; color: var(--muted); margin: 0; }
+.rate b { display: block; font-size: 34px; color: var(--gold); }
+table.score { width: 100%; border-collapse: collapse; font-size: 14px; }
+table.score th { text-align: left; font-weight: normal; color: var(--muted); padding: 4px 0; }
+table.score td { text-align: right; color: var(--text); }
+.star { color: var(--gold); }
+.dim { color: var(--muted); }
+.setrow { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: 8px 0; font-size: 14px; }
+.setrow input[type=range] { flex: 1; max-width: 200px; accent-color: #e3c06f; }
+.seg { display: flex; gap: 4px; }
+.seg button { padding: 5px 9px; font-size: 12px; background: transparent; border-color: var(--line); color: var(--muted); }
+.seg button.on { background: var(--wine); border-color: var(--gold); color: var(--text); }
+.settings .sample { background: #1a1411; border: 1px dashed var(--line); border-radius: 8px; padding: 8px 10px; font-size: var(--msg-fs); margin: 6px 0 10px; }
+.help .hitem { display: flex; gap: 12px; align-items: center; border-bottom: 1px solid var(--line); padding: 8px 0; }
+.help svg { width: 52px; height: 52px; flex: none; }
+.help b { color: var(--gold); font-size: 14px; }
+.help p { margin: 2px 0 0; font-size: 13px; line-height: 1.55; }
+.chart { display: block; width: 100%; max-width: 360px; margin: 0 auto 10px; }
+/* 文字の大きさ */
+body { --msg-fs: 16px; }
+body.fs-s { --msg-fs: 14px; }
+body.fs-l { --msg-fs: 19px; }
+.msg { font-size: var(--msg-fs); }
+body.fs-l .msg b { font-size: 15px; }
+body.fs-l .panel { font-size: 17px; }
+body.fs-s .panel { font-size: 14px; }
+.ccard .noface { display: flex; align-items: center; justify-content: center; width: 80px; height: 80px; margin: 0 auto 4px; border-radius: 50%; border: 2px solid var(--gold); background: #3a2e28; color: var(--muted); font-size: 30px; }
