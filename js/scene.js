@@ -102,7 +102,7 @@ export function investigate(cfg) {
       world.examined.add(id);
       if (!S.examined.includes(id)) { S.examined.push(id); save(); }
       await run(id);
-    } finally { busy = false; }
+    } finally { busy = false; if (!done) world.locked = false; }   // 絵や紙の画面を閉じたら、また歩けるように
     check();
   };
   world.onActor = async id => {
@@ -115,7 +115,7 @@ export function investigate(cfg) {
       else if (id === 'holmes') await narr('（ホームズには、やっぱり雫が見えていない）');
       else await think(`${NAMES[id]}。……こちらには気づいていない`);
       setFace('shizuku', {});
-    } finally { busy = false; }
+    } finally { busy = false; if (!done) world.locked = false; }
     check();   // 人から手がかりを得たときも、そろったか確かめる
   };
   world.sparkle = id => !!cfg.spots[id];

@@ -114,22 +114,25 @@ export function coverPortrait() {
       <g class="part" data-p="hat"><ellipse cx="100" cy="76" rx="70" ry="14" fill="#141010"/><rect x="66" y="40" width="68" height="36" rx="6" fill="#141010"/>
         <path d="M130 50 q40 -20 50 20 q-20 -10 -45 0z" fill="#e8e0d0"/></g>
     </svg></div>
+    <div class="pbtns"><button data-h="hat">帽子を隠す</button><button data-h="hair">髪を隠す</button></div>
     <p class="atip" id="ptip">帽子と巻き毛を、タップして隠してみよう</p></div>`);
   const left = new Set(['hat', 'hair']);
   return new Promise(res => {
-    c.querySelectorAll('.part').forEach(el => {
-      el.onclick = e => {
-        e.stopPropagation();
-        el.classList.add('gone'); page();
-        left.delete(el.dataset.p);
+    const hideP = p => {
+      const el = c.querySelector(`.part[data-p="${p}"]`);
+      if (!left.has(p)) return;
+      el.classList.add('gone'); page();
+      const b = c.querySelector(`[data-h="${p}"]`); if (b) b.disabled = true;
+      left.delete(p);
         if (!left.size) {
           chime();
           $('ptip').innerHTML = '<b>この顔……ステイプルトンだ！</b><br><small>タップでもどる</small>';
           c.querySelector('.frame').classList.add('reveal');
           setTimeout(() => c.addEventListener('click', function f() { c.removeEventListener('click', f); close(); res(); }), 400);
         }
-      };
-    });
+    };
+    c.querySelectorAll('.part').forEach(el => { el.onclick = e => { e.stopPropagation(); hideP(el.dataset.p); }; });
+    c.querySelectorAll('[data-h]').forEach(b => { b.onclick = e => { e.stopPropagation(); hideP(b.dataset.h); }; });
   });
 }
 

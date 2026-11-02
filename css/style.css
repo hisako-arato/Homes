@@ -407,3 +407,5 @@ body.looking #labels .label { pointer-events: auto; cursor: pointer; padding: 4p
 .mwin svg { display: block; width: 100%; }
 #nextBtn { position: fixed; left: 50%; bottom: calc(18px + var(--safe-b)); transform: translateX(-50%); z-index: 6; width: min(240px, 60%);
   background: var(--gold); color: #1a1210; font-weight: bold; box-shadow: 0 0 16px rgba(227,192,111,.6); }
+.port .pbtns { display: flex; gap: 8px; }
+.port .pbtns button { padding: 6px 14px; font-size: 14px; }
