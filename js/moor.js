@@ -184,6 +184,7 @@ export function buildMoor() {
     start: [30, 66],
     cam: { cx: 30, cz: 35, fx: 1, fz: 1, lfx: 1, lfz: 1, zoom: 0.62 },
     mood: MOODS.day,
+    wide: 1.6,   // 広いので速く歩く（大きくなぞると走る）
     glowOn: false,
     update(dt, focus) {
       if (!focus) return;

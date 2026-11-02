@@ -437,6 +437,9 @@ export async function runGame() {
   if (ch === 1) { await runChapter1(); S.step = 'c2'; save(); }
   if (ch <= 2) { await runChapter2(); S.step = 'c3'; save(); }
   if (ch <= 3) { await runChapter3(); S.step = 'c4'; save(); }
+  // 4章から始めたとき（つづきから）も、メニューとカメラのボタンを出す
+  $('noteBtn').onclick = () => openNotebook();
+  $('menuBtn').classList.remove('hidden');
   for (let n = Math.max(4, ch); n <= 13; n++) await LATER[n]();
 }
 

@@ -179,6 +179,7 @@ export const faceActor = (id, other) => faceTo(id, world.actors[other].x, world.
 export function walkTo(id, x, z) {
   const a = world.actors[id];
   const pts = findPath(world.room, a.x, a.z, x, z) || [[x, z]];
+  a.runK = 1;
   return new Promise(res => { a.path = pts; a.onArrive = res; });
 }
 // 道を探さずに、まっすぐ歩かせる（通りの上など）
@@ -274,10 +275,12 @@ function setupInput() {
   $('rotR').onclick = () => rotateView(1);
   $('lookBtn').onclick = () => toggleLook();
   $('lookExit').onclick = () => exitLook();
-  // 見回し中は、名札そのものもタップできる
+  // 名札そのものもタップできる（歩いて行って調べる。見回し中は、その場で調べる）
   $('labels').addEventListener('click', e => {
     const el = e.target.closest('.label');
-    if (world.mode === 'look' && el && el.dataset.id) lookPick(el.dataset.id);
+    if (!el || !el.dataset.id || world.locked) return;
+    if (world.mode === 'look') lookPick(el.dataset.id);
+    else if (world.mode === 'follow') { closePicker(); goThing(el.dataset.id); }
   });
 }
 
@@ -413,14 +416,23 @@ function openPicker(list, cx, cy, floorAt) {
 }
 export function closePicker() { $('picker').classList.add('hidden'); }
 let goal = 0;   // 新しい指示が来たら、前の「着いたら調べる」を取り消す
+// 広い所（荒野など）では速く歩き、遠くへは走る。建物の中はふつうの速さ
+const RUN_PX = 72;   // 指をこれより大きくなぞると走る
+const paceK = run => (world.room.wide ? (run ? world.room.wide * 1.7 : world.room.wide) : 1);
+function walkMe(x, z) {
+  const sh = world.actors.shizuku;
+  const p = walkTo('shizuku', x, z);
+  sh.runK = paceK(Math.hypot(x - sh.x, z - sh.z) > 6);
+  return p;
+}
 function goFloor(x, z) {
   const me = ++goal;
-  walkTo('shizuku', x, z).then(() => me);
+  walkMe(x, z).then(() => me);
 }
 async function goThing(id) {
   const t = world.room.things[id], me = ++goal;
   const sh = world.actors.shizuku;
-  if (Math.hypot(sh.x - t.at[0], sh.z - t.at[1]) > 0.25) await walkTo('shizuku', ...t.at);
+  if (Math.hypot(sh.x - t.at[0], sh.z - t.at[1]) > 0.25) await walkMe(...t.at);
   if (me !== goal || world.locked) return;
   faceTo('shizuku', t.label.x, t.label.z);
   world.onThing && world.onThing(id);
@@ -431,7 +443,7 @@ async function goActor(id) {
   const d = Math.hypot(sh.x - a.x, sh.z - a.z);
   if (d > 1.1) {
     const k = (d - 0.9) / d;
-    await walkTo('shizuku', sh.x + (a.x - sh.x) * k, sh.z + (a.z - sh.z) * k);
+    await walkMe(sh.x + (a.x - sh.x) * k, sh.z + (a.z - sh.z) * k);
   }
   if (me !== goal || world.locked) return;
   faceActor('shizuku', id);
@@ -459,17 +471,25 @@ let last = performance.now();
 const camTarget = new THREE.Vector3(4, 0.6, 3.6);
 export const winCam = new THREE.PerspectiveCamera(55, 1, 0.05, 80);
 export const focus = { on: false, x: 4, z: 3.5, zoom: 1 };
+let runTold = false;
 function tick(now) {
   const dt = Math.min(0.05, (now - last) / 1000);
   last = now;
   const sh = world.actors.shizuku;
   // 雫の操作（なぞる・キー）
   if (!world.locked && world.mode === 'follow') {
+    if (world.room.wide && !runTold) {
+      runTold = true;
+      try { if (!localStorage.getItem('homes-run')) { localStorage.setItem('homes-run', '1'); toast('広い所では、指を大きくなぞると走れる', 3600); } } catch (_) { /* noop */ }
+    }
     let mx = 0, mz = 0;
+    let run = false;
     if (stick.on && stick.moved) {
       const l = Math.hypot(stick.dx, stick.dy);
       mx = stick.dx / l; mz = stick.dy / l;
+      run = l > RUN_PX;
     }
+    if (keys.has('shift')) run = true;
     if (keys.has('arrowleft') || keys.has('a')) mx -= 1;
     if (keys.has('arrowright') || keys.has('d')) mx += 1;
     if (keys.has('arrowup') || keys.has('w')) mz -= 1;
@@ -482,6 +502,8 @@ function tick(now) {
       const yaw = Math.atan2(CAM_DIR.x, CAM_DIR.z);
       const l = Math.hypot(mx, mz);
       const wx = (mx * Math.cos(yaw) + mz * Math.sin(yaw)) / l, wz = (-mx * Math.sin(yaw) + mz * Math.cos(yaw)) / l;
+      sh.runK = paceK(run);
+      $('stick').classList.toggle('run', sh.runK > 2);
       stepFree(sh, wx, wz, dt);
     } else if (!sh.path) sh.moving = false;
   }
@@ -493,7 +515,7 @@ function tick(now) {
     a.g.position.set(a.x, a.y, a.z);
     if (a.kind === 'fig') animateFigure(a.g, a.moving, dt);
     else if (a.kind === 'dog') animateDog(a.g, a.moving, dt);
-    else if (a.kind === 'vrm') driveVRM(a.vrm, a.moving, dt, { pose: a.pose, face: a.face, talk: a.talk });
+    else if (a.kind === 'vrm') driveVRM(a.vrm, a.moving, dt, { pose: a.pose, face: a.face, talk: a.talk, rate: a.runK || 1 });
   }
   // 暖炉の火のゆらぎ
   const fl = world.room.fireLight;
@@ -511,7 +533,7 @@ const turnTo = (a, b, k) => {
 };
 const blocked = (x, z, r) => world.room.solids.some(o => x + r > o.minX && x - r < o.maxX && z + r > o.minZ && z - r < o.maxZ);
 function stepFree(a, wx, wz, dt) {
-  const v = a.speed * dt, r = 0.22;
+  const v = a.speed * (a.runK || 1) * dt, r = 0.22;
   const nx = a.x + wx * v, nz = a.z + wz * v;
   if (!blocked(nx, a.z, r)) a.x = nx;
   if (!blocked(a.x, nz, r)) a.z = nz;
@@ -522,7 +544,7 @@ function stepFree(a, wx, wz, dt) {
 function followPath(a, dt) {
   const [tx, tz] = a.path[0];
   const dx = tx - a.x, dz = tz - a.z, d = Math.hypot(dx, dz);
-  const v = a.speed * dt;
+  const v = a.speed * (a.runK || 1) * dt;
   a.moving = true;
   if (d > 0.001) a.g.rotation.y = turnTo(a.g.rotation.y, Math.atan2(dx, dz), dt * 10);
   a.targetRot = null;
@@ -616,7 +638,7 @@ function updateLabels() {
   const sh = world.actors.shizuku;
   if (world.mode === 'look') return lookLabels();
   const show = world.mode === 'follow' && !world.locked;
-  let nearest = null, nd = 1.3;
+  let nearest = null, nd = 1.8;
   for (const t of Object.values(world.room.things)) {
     const d = Math.hypot(t.at[0] - sh.x, t.at[1] - sh.z);
     if (d < nd && (world.sparkle(t.id) || world.examined.has(t.id))) { nd = d; nearest = t.id; }
@@ -625,6 +647,7 @@ function updateLabels() {
     const key = world.room.id + ':' + t.id;
     let el = labels.get(key);
     if (!el) { el = document.createElement('div'); el.className = 'label'; box.append(el); labels.set(key, el); }
+    el.dataset.id = t.id;
     const dist = Math.hypot(t.at[0] - sh.x, t.at[1] - sh.z);
     const done = world.examined.has(t.id), useful = world.sparkle(t.id) && !t.hidden;
     const named = t.id === nearest;

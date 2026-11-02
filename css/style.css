@@ -47,7 +47,7 @@ button.primary { width: 100%; margin-top: 12px; background: var(--gold); color: 
 .stick.on { opacity: 1; }
 .stick i { position: absolute; left: 35px; top: 35px; width: 40px; height: 40px; border-radius: 50%; background: rgba(227,192,111,.6); }
 
-#noteBtn { position: fixed; top: calc(10px + var(--safe-t)); right: 60px; z-index: 6; padding: 6px 12px; font-size: 13px; background: rgba(40, 28, 24, .9); }
+#noteBtn { display: none !important; position: fixed; top: calc(10px + var(--safe-t)); right: 60px; z-index: 6; padding: 6px 12px; font-size: 13px; background: rgba(40, 28, 24, .9); }
 
 /* 台詞の欄 */
 .msg { position: fixed; left: 50%; bottom: calc(14px + var(--safe-b)); transform: translateX(-50%); width: min(560px, calc(100% - 24px)); z-index: 7;
@@ -373,9 +373,9 @@ button.chosen::after { content: '✓'; position: absolute; right: 10px; top: 50%
 .okc { color: var(--ok); }
 #title .offtag { font-size: 11px; color: var(--muted); margin: 1.4em 0 0; }
 
-/* カメラのボタン（回す・見回す）。推理ノートのボタンが出ているときだけ出す */
+/* カメラのボタン（回す・見回す）。メニューのボタンが出ているときだけ出す */
 #camBtns { position: fixed; right: 10px; bottom: calc(118px + var(--safe-b)); z-index: 6; display: none; flex-direction: column; gap: 8px; }
-#noteBtn:not(.hidden) ~ #camBtns { display: flex; }
+#menuBtn:not(.hidden) ~ #camBtns { display: flex; }
 #camBtns button { width: 44px; height: 44px; padding: 0; border-radius: 50%; font-size: 20px; line-height: 1; background: rgba(40, 28, 24, .85); }
 body.looking #rotL, body.looking #rotR { display: none; }
 body.looking #lookBtn { background: var(--gold); color: #1a1210; }
@@ -409,3 +409,11 @@ body.looking #labels .label { pointer-events: auto; cursor: pointer; padding: 4p
   background: var(--gold); color: #1a1210; font-weight: bold; box-shadow: 0 0 16px rgba(227,192,111,.6); }
 .port .pbtns { display: flex; gap: 8px; }
 .port .pbtns button { padding: 6px 14px; font-size: 14px; }
+
+/* 名札：大きく、押せるように（押すと歩いて行って調べる） */
+#labels .label { pointer-events: auto; cursor: pointer; -webkit-tap-highlight-color: transparent; user-select: none; -webkit-user-select: none; }
+#labels .label:not(.dot) { font-size: 15px; padding: 7px 14px; border-radius: 16px; min-height: 18px; }
+#labels .label:not(.dot):active { transform: translate(-50%, -100%) scale(.94); }
+#labels .label.dot { font-size: 20px; padding: 8px 10px; }
+#labels .label.dot.done { font-size: 16px; }
+#stick.run { border-color: var(--gold); box-shadow: 0 0 12px rgba(227,192,111,.6); }

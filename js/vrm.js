@@ -29,8 +29,9 @@ const smooth = (a, b, k) => a + (b - a) * Math.min(1, k);
 export function driveVRM(vrm, moving, dt, extra = {}) {
   const m = vrm.motion;
   m.t += dt;
-  m.walk = moving ? m.walk + dt * 10 : 0;
-  m.amt = smooth(m.amt, moving ? 1 : 0, dt * 8);
+  const rate = Math.min(1.9, Math.sqrt(extra.rate || 1));   // 速く歩く・走るときは、足も速く大きく
+  m.walk = moving ? m.walk + dt * 10 * rate : 0;
+  m.amt = smooth(m.amt, moving ? Math.min(1.5, rate) : 0, dt * 8);
   m.wave = smooth(m.wave, extra.pose === 'wave' ? 1 : 0, dt * 5);
   m.look = smooth(m.look || 0, extra.pose === 'look' ? 1 : 0, dt * 5);
   const s = Math.sin(m.walk), amt = m.amt, breath = Math.sin(m.t * 1.6) * 0.015, look = m.look;
