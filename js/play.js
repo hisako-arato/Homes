@@ -416,7 +416,7 @@ function openPicker(list, cx, cy, floorAt) {
 }
 export function closePicker() { $('picker').classList.add('hidden'); }
 let goal = 0;   // 新しい指示が来たら、前の「着いたら調べる」を取り消す
-// 広い所（荒野など）では速く歩き、遠くへは走る。建物の中はふつうの速さ
+// 屋外（荒野・通り・路地）では速く歩き、遠くへは走る。建物の中はふつうの速さ
 const RUN_PX = 72;   // 指をこれより大きくなぞると走る
 const paceK = run => (world.room.wide ? (run ? world.room.wide * 1.7 : world.room.wide) : 1);
 function walkMe(x, z) {
@@ -480,7 +480,7 @@ function tick(now) {
   if (!world.locked && world.mode === 'follow') {
     if (world.room.wide && !runTold) {
       runTold = true;
-      try { if (!localStorage.getItem('homes-run')) { localStorage.setItem('homes-run', '1'); toast('広い所では、指を大きくなぞると走れる', 3600); } } catch (_) { /* noop */ }
+      try { if (!localStorage.getItem('homes-run')) { localStorage.setItem('homes-run', '1'); toast('外では、指を大きくなぞると走れる', 3600); } } catch (_) { /* noop */ }
     }
     let mx = 0, mz = 0;
     let run = false;

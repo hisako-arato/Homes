@@ -124,6 +124,7 @@ export function buildStreet() {
     id: 'street', name: 'ロンドン　リージェント街', g, solids, things, W, D, cabs, sus,
     walls: [{ obj: west, n: [-1, 0] }, { obj: east, n: [1, 0] }],
     start: [2.6, 41.5],
+    wide: 1.4,   // 屋外なので速く歩く（大きくなぞると走る）
     cam: { cx: 4.4, cz: 30, fx: 0.25, fz: 1.0, lfx: 0.5, lfz: 1.0, zmin: 4, zmax: 33 },
     mood: { bg: '#a8a49a', fogColor: '#a8a49a', fog: [26, 46], hemi: ['#f0ece2', '#6a6458', 1.25], sun: 0.9 },
     // 毎フレーム：馬車と、歩く人を動かす。影の範囲を雫に合わせる

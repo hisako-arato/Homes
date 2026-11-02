@@ -421,7 +421,7 @@ const ICON = {
 export function openHelp(onBack = null) {
   const item = (ic, t, d) => `<div class="hitem">${ICON[ic]}<div><b>${t}</b><p>${d}</p></div></div>`;
   const m = panel(`<h3>操作説明</h3><div class="help">
-    ${item('swipe', '歩く', '画面のどこでも、指を置いてなぞる。荒野など広い所では速く歩き、大きくなぞると走る。<br>PC：矢印キー・WASD（Shift で走る）')}
+    ${item('swipe', '歩く', '画面のどこでも、指を置いてなぞる。荒野や通りなど外では速く歩き、大きくなぞると走る。<br>PC：矢印キー・WASD（Shift で走る）')}
     ${item('tap', '調べる・話す', '物や人、または名札（✦ や名前の札）をタップ。そこまで歩いて調べる。<br>PC：スペース・E で近くの物')}
     ${item('mark', '印', '<span class="g">✦ 金色</span>：まだ調べていない／<span class="d">✓ 灰色</span>：調べた。<br>印の無い所にも、何かあるかもしれない')}
     ${item('list', '選ぶ', '指の近くに物が2つ以上あると、一覧が出る')}

@@ -177,6 +177,7 @@ export function buildAlley() {
     id: 'alley', name: 'イチイの並木道（話の中）', g, solids, things, W, D, lamp, moon, glow,
     walls: [{ obj: hl, n: [-1, 0] }, { obj: hr, n: [1, 0] }, { obj: house, n: [0, -1] }],
     start: [3, 1.7],
+    wide: 1.25,   // 屋外なので速く歩く（大きくなぞると走る）
     cam: { cx: 3, cz: 8.5, fx: 0.15, fz: 0.7, lfx: 0.6, lfz: 0.8 },
     mood: { bg: '#0d1220', fog: [28, 46], hemi: ['#8a9ac8', '#1a1a24', 1.0], sun: 0, moon: 1.8 },
   };
