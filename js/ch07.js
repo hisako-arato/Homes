@@ -3,14 +3,14 @@
 // 翌朝：この数日のこと（フランクランド老人、石器時代の小屋、ヘンリー卿とベリル）を聞いて、ホームズへの第一の報告を一緒に書く
 import { THREE } from './engine.js';
 import { writeReport } from './report.js';
+import { day2 } from './days.js';
 import { A, L, cast, investigate, quiz, grade, registerSteps, runSteps, endCard, titleCard, placeCard, world, place, walkTo, faceTo, faceActor, setArea, fade, addClue, mood, watsonTalk, hide, ensure, wait } from './scene.js';
 
-registerSteps('第7章', [['c7', '夜中の廊下'], ['c7d', '推理'], ['c7r', 'ホームズへの報告']]);
+registerSteps('第7章', [['c7', '館の一日'], ['c7b', '夜中の廊下'], ['c7d', '推理'], ['c7r', 'ホームズへの報告']]);
 const HALL_NIGHT = { bg: '#100c10', fog: [32, 50], hemi: ['#d4c6d4', '#4a3e44', 1.4], sun: 0 };   // 夜の館（ろうそくの明かりで、足元が見える程度）
 let candle = null;
 
 async function corridor() {
-  await titleCard('第7章', '第一の報告');
   world.locked = true;
   await placeCard('数日後　夜中の2時', 'バスカヴィル館');
   setArea('hall'); mood(HALL_NIGHT);
@@ -72,7 +72,7 @@ async function report() {
 }
 
 export async function runChapter7() {
-  await runSteps([['c7', corridor], ['c7d', deduction], ['c7r', report]]);
+  await runSteps([['c7', async () => { await titleCard('第7章', '第一の報告'); await day2(); }], ['c7b', corridor], ['c7d', deduction], ['c7r', report]]);
   await endCard('第7章', '第一の報告', 'つづく ―― 次は、荒野の灯', 'c8');
 }
 export { faceTo, faceActor, wait };

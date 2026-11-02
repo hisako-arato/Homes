@@ -124,6 +124,7 @@ export function buildAlley() {
   // ---- 現場の痕跡 ----
   // 館から木戸の前までは、ふつうの靴の跡
   const prints = new THREE.Group(); g.add(prints);
+  const marks = [prints];   // 話の中だけの跡（昼に本物の並木道を歩くときは消す）
   const putPrint = (m, x, z, s = 0.28) => {
     const p = new THREE.Mesh(new THREE.PlaneGeometry(s * 0.5, s), m);
     p.rotation.x = -Math.PI / 2;   // つま先を手前（あずまや）へ
@@ -140,7 +141,7 @@ export function buildAlley() {
   // 葉巻の灰（2か所）
   for (const [x, z] of [[2.15, 8.6], [2.3, 9.25]]) {
     const a = cyl(g, 0.05, 0.07, 0.03, mat('#b8b4ac'), x, 0, z, 6);
-    a.castShadow = false;
+    a.castShadow = false; marks.push(a);
   }
   thing('ash', '門の前の灰', [2.25, 0, 8.9, 0.5, 0.1, 1.0], [3.1, 8.4], [2.25, 0.4, 8.9]);
   // 倒れていた場所（並木道の、あずまや寄り）
@@ -149,7 +150,8 @@ export function buildAlley() {
   outline.position.set(3.1, 0.014, 13.6); outline.renderOrder = 3;
   g.add(outline);
   const hat = cyl(g, 0.16, 0.16, 0.02, M.black, 3.75, 0, 12.7, 10);
-  ball(g, 0.1, M.black, 3.75, 0.08, 12.7, 1).scale.set(1, 0.7, 1);
+  const hatTop = ball(g, 0.1, M.black, 3.75, 0.08, 12.7, 1); hatTop.scale.set(1, 0.7, 1);
+  marks.push(outline, hat, hatTop);
   hat.castShadow = false;
   thing('body', '倒れていた場所', [3.1, 0, 13.6, 1.0, 0.05, 1.8], [4.0, 13.6], [3.1, 0.5, 13.6]);
   // 道の端、木戸と同じ側の、大きな犬の足跡（印を出さない。気づくかどうかは雫しだい）
@@ -157,7 +159,7 @@ export function buildAlley() {
     const p = new THREE.Mesh(new THREE.PlaneGeometry(0.34, 0.34), pawMat);
     p.rotation.x = -Math.PI / 2; p.rotation.z = r;
     p.position.set(x, 0.013, z); p.renderOrder = 2;
-    g.add(p);
+    g.add(p); marks.push(p);
   }
   thing('hound', '道の端の足跡', [2.12, 0, 11.15, 0.4, 0.05, 1.6], [2.9, 11.0], [2.12, 0.4, 11.15], { hidden: true });
 
@@ -174,7 +176,7 @@ export function buildAlley() {
   g.add(glow);
 
   return {
-    id: 'alley', name: 'イチイの並木道（話の中）', g, solids, things, W, D, lamp, moon, glow,
+    id: 'alley', name: 'イチイの並木道（話の中）', g, solids, things, W, D, lamp, moon, glow, marks,
     walls: [{ obj: hl, n: [-1, 0] }, { obj: hr, n: [1, 0] }, { obj: house, n: [0, -1] }],
     start: [3, 1.7],
     wide: 1.25,   // 屋外なので速く歩く（大きくなぞると走る）

@@ -5,6 +5,7 @@ import { buildAlley } from './alley.js';
 import { buildStreet } from './street.js';
 import { buildHotel, buildHall, buildOffice } from './places.js';
 import { buildMoor } from './moor.js';
+import { buildStudy, buildMerripit } from './places2.js';
 import { buildNav, findPath } from './nav.js';
 import { loadVRM, driveVRM } from './vrm.js';
 import { arm } from './tap.js';
@@ -57,7 +58,7 @@ export async function initWorld(onProgress) {
   const room = buildRoom();
   const alley = buildAlley();
   const street = buildStreet();
-  for (const a of [room, alley, street, buildHotel(), buildHall(), buildOffice(), buildMoor()]) { buildNav(a, a.W, a.D); world.areas[a.id] = a; }
+  for (const a of [room, alley, street, buildHotel(), buildHall(), buildOffice(), buildMoor(), buildStudy(), buildMerripit()]) { buildNav(a, a.W, a.D); world.areas[a.id] = a; }
   world.room = room;
   // 雫（VRM）
   const vrm = await loadVRM(new URL('../assets/vrm/lite/shizuku2.vrm', import.meta.url).href, onProgress);

@@ -1,19 +1,19 @@
 // セーブ（端末の localStorage。章の区切りごとに書く）
 export const KEY = 'homes-save-v1';
-export const S = { step: 'intro', clues: [], examined: [], answers: {}, persons: [], reports: {}, sus: {}, susLog: [] };
+export const S = { step: 'intro', clues: [], examined: [], answers: {}, persons: [], reports: {}, sus: {}, susLog: [], trivia: [] };
 export function hasSave() {
   try { return !!localStorage.getItem(KEY); } catch (_) { return false; }
 }
 export function load() {
   try { Object.assign(S, JSON.parse(localStorage.getItem(KEY)) || {}); } catch (_) { /* noop */ }
-  S.reports = S.reports || {}; S.sus = S.sus || {}; S.susLog = S.susLog || [];
+  S.reports = S.reports || {}; S.sus = S.sus || {}; S.susLog = S.susLog || []; S.trivia = S.trivia || [];
   return S;
 }
 export function save() {
   try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (_) { /* noop */ }
 }
 export function reset() {
-  Object.assign(S, { step: 'intro', clues: [], examined: [], answers: {}, persons: [], reports: {}, sus: {}, susLog: [] });
+  Object.assign(S, { step: 'intro', clues: [], examined: [], answers: {}, persons: [], reports: {}, sus: {}, susLog: [], trivia: [] });
   try { localStorage.removeItem(KEY); } catch (_) { /* noop */ }
 }
 export const addClue = id => { if (!S.clues.includes(id)) { S.clues.push(id); save(); return true; } return false; };
