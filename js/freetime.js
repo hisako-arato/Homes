@@ -41,7 +41,7 @@ EXTRA_TABS.push(['tri', 'こぼれ話', () => {
 
 // ---- ワトソンが、雫の後ろをついてくる ----
 let follow = null;
-function startFollow() {
+export function startFollow() {
   stopFollow();
   follow = setInterval(() => {
     const w = A('watson'), sh = A('shizuku');
@@ -55,7 +55,7 @@ function startFollow() {
     }
   }, 350);
 }
-function stopFollow() { if (follow) clearInterval(follow); follow = null; }
+export function stopFollow() { if (follow) clearInterval(follow); follow = null; }
 
 // 一日を過ごす。day：{ title, start: [場所, [x, z], 向き], watson: ワトソンとの話, areas: { 場所: { people, spots, actors, enter } } }
 //  people：[[id, x, z, 向き, 服], ...]（その場所に入ったときに並べる。ワトソンは別）

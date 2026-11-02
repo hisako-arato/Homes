@@ -4,8 +4,9 @@ import { A, L, cast, investigate, quiz, grade, registerSteps, runSteps, endCard,
 import { charredLetter } from './overlays.js';
 import { writeReport } from './report.js';
 import { day3 } from './days.js';
+import { nightRain } from './night.js';
 
-registerSteps('第9章', [['c9', '館の一日'], ['c9a', 'バリモアの話'], ['c9b', '書斎の暖炉'], ['c9d', 'L.L. とは'], ['c9e', '推理'], ['c9f', 'ワトソンの日記']]);
+registerSteps('第9章', [['c9', '館の一日'], ['c9n', '雨の夜'], ['c9a', 'バリモアの話'], ['c9b', '書斎の暖炉'], ['c9d', 'L.L. とは'], ['c9e', '推理'], ['c9f', 'ワトソンの日記']]);
 const DAY = () => world.areas.hall.mood;
 
 async function barrymoreTalk() {
@@ -78,7 +79,7 @@ async function diary() {
 }
 
 export async function runChapter9() {
-  await runSteps([['c9', async () => { await titleCard('第9章', '焼け残った手紙'); await day3(); }], ['c9a', barrymoreTalk], ['c9b', study], ['c9d', mortimer], ['c9e', deduction], ['c9f', diary]]);
+  await runSteps([['c9', async () => { await titleCard('第9章', '焼け残った手紙'); await day3(); }], ['c9n', nightRain], ['c9a', barrymoreTalk], ['c9b', study], ['c9d', mortimer], ['c9e', deduction], ['c9f', diary]]);
   await endCard('第9章', '焼け残った手紙', 'つづく ―― 次は、岩山の男', 'c10');
 }
 export { A, faceTo, addPerson, watsonTalk };

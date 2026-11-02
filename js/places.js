@@ -113,9 +113,9 @@ export function buildHall() {
   // 燭台の明かり
   const lamp = new THREE.PointLight('#ffd0a0', 6, 16, 1.1); lamp.position.set(7, 3.2, 6); g.add(lamp);
   // 奥と階段のあたりの燭台（館の隅が暗く沈みすぎないように）
-  for (const [x, z] of [[3.5, 2.5], [11, 9]]) { const l = new THREE.PointLight('#ffc890', 3, 9, 1.3); l.position.set(x, 2.6, z); g.add(l); }
+  const side = [[3.5, 2.5], [11, 9]].map(([x, z]) => { const l = new THREE.PointLight('#ffc890', 3, 9, 1.3); l.position.set(x, 2.6, z); g.add(l); return l; });
   Object.assign(k.area, {
-    fire, lamp, start: [7, 9],
+    fire, lamp, side, start: [7, 9],
     cam: { cx: 7, cz: 6, fx: 0.45, fz: 0.45, lfx: 0.6, lfz: 0.6, zoom: 0.78 },
     mood: { bg: '#1c1816', fog: [34, 52], hemi: ['#f4e8d4', '#5e5244', 1.45], sun: 0.95 },
   });

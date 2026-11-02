@@ -463,3 +463,6 @@ body.looking #labels .label { pointer-events: auto; cursor: pointer; padding: 4p
 .rcopy small { color: #6a5a48; font-size: 11px; }
 .rcopy p { text-align: left; margin: 4px 0; font-size: 13px; line-height: 1.6; }
 .rcopy i { display: block; font-size: 11px; color: #6a5a48; text-align: right; font-style: normal; }
+/* 稲光 */
+.lightning { position: fixed; inset: 0; z-index: 9; background: #eef2ff; pointer-events: none; animation: lightning .6s ease-out forwards; }
+@keyframes lightning { 0% { opacity: .9; } 15% { opacity: .1; } 25% { opacity: .8; } 100% { opacity: 0; } }

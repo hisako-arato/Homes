@@ -4,9 +4,10 @@ import { A, L, cast, enter, investigate, quiz, grade, registerSteps, runSteps, e
 import { howl } from './audio.js';
 import { writeReport } from './report.js';
 import { day1 } from './days.js';
+import { night1 } from './night.js';
 import { ensure } from './scene.js';
 
-registerSteps('第5章', [['c5', 'パディントン駅'], ['c5b', '荒野へ'], ['c5c', '館の大広間'], ['c5d', '館の夜'], ['c5e', '翌朝'], ['c5f', 'ホームズへの電報'], ['c5g', '館の一日']]);
+registerSteps('第5章', [['c5', 'パディントン駅'], ['c5b', '荒野へ'], ['c5c', '館の大広間'], ['c5d', '館の夜'], ['c5e', '翌朝'], ['c5f', 'ホームズへの電報'], ['c5g', '館の一日'], ['c5h', '夜の見回り']]);
 const HALL_NIGHT = { bg: '#100c10', fog: [32, 50], hemi: ['#d4c6d4', '#4a3e44', 1.4], sun: 0 };   // 夜の館（ろうそくの明かりで、足元が見える程度）
 
 async function station() {
@@ -158,7 +159,7 @@ async function telegramToHolmes() {
 }
 
 export async function runChapter5() {
-  await runSteps([['c5', station], ['c5b', moorArrival], ['c5c', hallInside], ['c5d', night], ['c5e', morning], ['c5f', telegramToHolmes], ['c5g', day1]]);
+  await runSteps([['c5', station], ['c5b', moorArrival], ['c5c', hallInside], ['c5d', night], ['c5e', morning], ['c5f', telegramToHolmes], ['c5g', day1], ['c5h', night1]]);
   await endCard('第5章', 'バスカヴィル館', 'つづく ―― 次は、メリピット荘', 'c6');
 }
 export { wait, faceTo, faceActor, howl, S, save, setFace, toast, think };

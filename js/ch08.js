@@ -2,6 +2,8 @@
 // 夜の見張り：窓辺のバリモアを問いつめ、荒野にこたえる灯 → 夫人の打ち明け話（脱獄囚は弟）
 // → 荒野へ。岩のすき間に、獣のような顔 → 月を背に、岩山の上の人影
 import { THREE } from './engine.js';
+import { nightEnv } from './night.js';
+import { tick, step } from './audio.js';
 import { writeReport } from './report.js';
 import { A, L, cast, enter, investigate, quiz, grade, registerSteps, runSteps, endCard, titleCard, placeCard, world, place, walkTo, walkStraight, faceTo, faceActor, setArea, fade, addClue, addPerson, mood, hide, ensure, wait, watsonTalk, found } from './scene.js';
 
@@ -14,11 +16,26 @@ async function watch() {
   setArea('hall'); mood(HALL_NIGHT);
   world.areas.hall.fire.intensity = 1.6; world.areas.hall.lamp.intensity = 0.8;
   if (!candle) { candle = new THREE.PointLight('#ffcf7a', 3, 6, 1.4); world.areas.hall.g.add(candle); }
-  candle.position.set(13.3, 1.6, 2.2); candle.intensity = 3;
-  cast([['barrymore', 13.0, 2.2, Math.PI / 2], ['henry', 11.0, 4.2, Math.PI / 2], ['watson', 10.6, 4.8, Math.PI / 2, false, null]]);
+  candle.intensity = 0;
+  cast([['henry', 11.0, 4.2, Math.PI / 2], ['watson', 10.6, 4.8, Math.PI / 2, false, null]]);
   place('shizuku', 10.0, 5.6, Math.PI / 2);
-  await placeCard('次の夜　2時', 'バスカヴィル館');
+  await placeCard('次の夜', 'バスカヴィル館');
+  nightEnv(true, { light: 0.35 });
   await fade(false);
+  // 明かりを消して、待つ。時計の音……やがて、足音
+  await L([['N', 'ヘンリー卿とワトソンは、明かりを消して、暗い大広間で待った。'], ['henry', '（小声で）……1時。まだ来ない'], ['T', '時計の音しか、聞こえない……']]);
+  for (let i = 0; i < 6; i++) { tick(0.9); await wait(700); }
+  await L([['henry', '（小声で）……2時だ'], ['T', '……今、何か聞こえた？']]);
+  place('barrymore', 13.4, 6.2, Math.PI);
+  for (let i = 0; i < 5; i++) { step(0.3 + i * 0.15, 0.6); await wait(520); }
+  candle.intensity = 3;
+  const follow = setInterval(() => { const b = A('barrymore'); candle.position.set(b.x + 0.3, 1.6, b.z); }, 50);
+  await walkTo('barrymore', 13.0, 2.2);
+  clearInterval(follow);
+  candle.position.set(13.3, 1.6, 2.2);
+  A('barrymore').g.rotation.y = Math.PI / 2;
+  await L([['T', 'バリモア……！ また、ろうそくを持って、あの窓へ', 'surprised'], ['N', 'ヘンリー卿が、さっと立ち上がった。']]);
+  nightEnv(false, { mood: HALL_NIGHT });
   await L([
     ['henry', 'バリモア！ ここで何をしている'],
     ['barrymore', '……窓が、きちんと閉まっているか、確かめておりました'],

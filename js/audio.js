@@ -88,3 +88,69 @@ export function howl() {
 export function scream() { tone(880, 0, 0.9, 'sawtooth', 0.04); tone(660, 0.3, 1.1, 'sawtooth', 0.035); noise(1.2, 0.15, 2500); }
 // 銃声
 export function bang() { noise(0.35, 1.2, 800); tone(70, 0, 0.3, 'sine', 0.3); }
+
+// ---- 夜の館の音（vol：0〜1 の大きさ、pan：-1 左〜1 右。近さと方向で変える） ----
+function out(c, vol, pan) {
+  const g = c.createGain(); g.gain.value = vol * master / 0.8;
+  if (c.createStereoPanner) { const p = c.createStereoPanner(); p.pan.value = Math.max(-1, Math.min(1, pan)); g.connect(p).connect(c.destination); }
+  else g.connect(c.destination);
+  return g;
+}
+function burst(c, dst, t, dur, freq, q = 1) {
+  const n = Math.floor(c.sampleRate * dur), b = c.createBuffer(1, n, c.sampleRate), d = b.getChannelData(0);
+  for (let i = 0; i < n; i++) d[i] = (Math.random() * 2 - 1) * Math.sin(Math.PI * i / n);
+  const s = c.createBufferSource(), f = c.createBiquadFilter();
+  s.buffer = b; f.type = 'bandpass'; f.frequency.value = freq; f.Q.value = q;
+  s.connect(f).connect(dst); s.start(t);
+}
+// ひそひそ声（短い息の音が続く）
+export function whisper(vol = 1, pan = 0) {
+  const c = ac(); if (!c || muted || vol <= 0.01) return;
+  const o = out(c, vol * 0.5, pan), t = c.currentTime;
+  for (let i = 0; i < 7; i++) burst(c, o, t + i * 0.16 + Math.random() * 0.05, 0.12, 1800 + Math.random() * 1600, 2);
+}
+// すすり泣き（ふるえながら下がる声）
+export function sob(vol = 1, pan = 0) {
+  const c = ac(); if (!c || muted || vol <= 0.01) return;
+  const o = out(c, vol * 0.07, pan), t = c.currentTime;
+  for (let i = 0; i < 3; i++) {
+    const x = c.createOscillator(), g = c.createGain(), lfo = c.createOscillator(), lg = c.createGain();
+    x.type = 'triangle'; const t0 = t + i * 0.55;
+    x.frequency.setValueAtTime(520 - i * 30, t0); x.frequency.linearRampToValueAtTime(380 - i * 30, t0 + 0.45);
+    lfo.frequency.value = 7; lg.gain.value = 18; lfo.connect(lg).connect(x.frequency);
+    g.gain.setValueAtTime(0, t0); g.gain.linearRampToValueAtTime(1, t0 + 0.05); g.gain.linearRampToValueAtTime(0, t0 + 0.45);
+    x.connect(g).connect(o); x.start(t0); lfo.start(t0); x.stop(t0 + 0.5); lfo.stop(t0 + 0.5);
+  }
+}
+// 床のきしみ
+export function creak(vol = 1, pan = 0) {
+  const c = ac(); if (!c || muted) return;
+  const o = out(c, vol * 0.05, pan), t = c.currentTime, x = c.createOscillator(), f = c.createBiquadFilter();
+  x.type = 'sawtooth'; x.frequency.setValueAtTime(70, t); x.frequency.linearRampToValueAtTime(140, t + 0.35);
+  f.type = 'bandpass'; f.frequency.value = 600; f.Q.value = 6;
+  x.connect(f).connect(o); x.start(t); x.stop(t + 0.4);
+}
+// 時計の音（チク、タク）
+export function tick(vol = 1) {
+  const c = ac(); if (!c || muted) return;
+  burst(c, out(c, vol * 0.6, 0), c.currentTime, 0.02, 3800, 8);
+}
+// 足音（コツ）
+export function step(vol = 1, pan = 0) {
+  const c = ac(); if (!c || muted) return;
+  const o = out(c, vol * 0.8, pan); burst(c, o, c.currentTime, 0.05, 260, 3);
+}
+// 雨（鳴らしつづける。stopRain で止める）
+let rainNode = null;
+export function startRain(vol = 0.5) {
+  const c = ac(); if (!c || rainNode) return;
+  const n = c.sampleRate * 2, b = c.createBuffer(1, n, c.sampleRate), d = b.getChannelData(0);
+  for (let i = 0; i < n; i++) d[i] = Math.random() * 2 - 1;
+  const s = c.createBufferSource(), f = c.createBiquadFilter(), g = c.createGain();
+  s.buffer = b; s.loop = true; f.type = 'lowpass'; f.frequency.value = 1400; g.gain.value = muted ? 0 : vol * 0.12 * master / 0.8;
+  s.connect(f).connect(g).connect(c.destination); s.start();
+  rainNode = { s, g };
+}
+export function stopRain() { if (rainNode) { try { rainNode.s.stop(); } catch (_) { /* noop */ } rainNode = null; } }
+// 雷
+export function thunder() { noise(1.8, 1.4, 120); noise(0.4, 0.8, 300, 0.1); tone(48, 0, 1.4, 'sine', 0.22); }

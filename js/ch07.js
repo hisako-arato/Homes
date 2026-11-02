@@ -3,6 +3,7 @@
 // 翌朝：この数日のこと（フランクランド老人、石器時代の小屋、ヘンリー卿とベリル）を聞いて、ホームズへの第一の報告を一緒に書く
 import { THREE } from './engine.js';
 import { writeReport } from './report.js';
+import { nightEnv, sneak } from './night.js';
 import { day2 } from './days.js';
 import { A, L, cast, investigate, quiz, grade, registerSteps, runSteps, endCard, titleCard, placeCard, world, place, walkTo, faceTo, faceActor, setArea, fade, addClue, mood, watsonTalk, hide, ensure, wait } from './scene.js';
 
@@ -15,12 +16,15 @@ async function corridor() {
   await placeCard('数日後　夜中の2時', 'バスカヴィル館');
   setArea('hall'); mood(HALL_NIGHT);
   world.areas.hall.fire.intensity = 1.6; world.areas.hall.lamp.intensity = 0.8;
-  cast([['barrymore', 13.0, 2.2, Math.PI / 2]]);
+  cast([['barrymore', 13.0, 2.2, Math.PI / 2], ['watson', 11.4, 10.2, Math.PI, false, null]]);
   place('shizuku', 10.8, 9.6, Math.PI);
+  nightEnv(true, { light: 0.4 });   // ワトソンは、ろうそくを手でおおって行く
   if (!candle) { candle = new THREE.PointLight('#ffcf7a', 3, 6, 1.4); world.areas.hall.g.add(candle); }
   candle.position.set(13.3, 1.6, 2.2); candle.intensity = 3;
   await fade(false);
-  await L([['N', '……廊下を、忍び足で歩く音で目が覚めた。'], ['T', '誰かいる。……西の廊下に、ろうそくの明かり', 'surprised']]);
+  await L([['N', '……廊下を、忍び足で歩く音で目が覚めた。'], ['T', '誰かいる。……西の廊下に、ろうそくの明かり', 'surprised'],
+    ['watson', '（小声で）バリモアだ……。近くまで行って、何をしているのか見よう'], ['watson', '（明かりは消していく。見つからないように）']]);
+  await sneak();
   await investigate({
     need: ['candle', 'westview'],
     intro: 'そっと近づいて、様子を見よう（雫の姿は、誰にも見えない）',
@@ -37,6 +41,7 @@ async function corridor() {
   });
   world.locked = true;
   candle.intensity = 0;
+  nightEnv(false, { mood: HALL_NIGHT });
   await walkTo('barrymore', 13.2, 5.6);
   hide('barrymore');
   cast([['watson', 11.4, 6.0, Math.PI / 2, false, null]]);
