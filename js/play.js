@@ -3,12 +3,14 @@ import { THREE, renderer, scene, camera, CAM_DIR, resize, makeFigure, animateFig
 import { buildRoom, STREET_Y } from './room.js';
 import { buildAlley } from './alley.js';
 import { buildStreet } from './street.js';
+import { buildHotel, buildHall, buildOffice } from './places.js';
+import { buildMoor } from './moor.js';
 import { buildNav, findPath } from './nav.js';
 import { loadVRM, driveVRM } from './vrm.js';
 import { arm } from './tap.js';
 
 const $ = id => document.getElementById(id);
-export const world = { room: null, areas: {}, actors: {}, mode: 'follow', locked: true, onThing: null, onActor: null, examined: new Set(), sparkle: () => true };
+export const world = { fresh: true, room: null, areas: {}, actors: {}, mode: 'follow', locked: true, onThing: null, onActor: null, examined: new Set(), sparkle: () => true };
 
 // ---- 人物 ----
 const SPEC = {
@@ -16,8 +18,25 @@ const SPEC = {
   holmes: { height: 1.86, gown: '#6e6a62', belt: '#3a2a2a', trousers: '#2e2e32', hair: '#1e1a18', flatHair: true, skin: '#e6cdb6', longNose: true },
   mortimer: { height: 1.9, coat: '#3a3a40', coatLen: 0.55, trousers: '#5a5248', hair: '#8a6a40', skin: '#ecd2bc', glasses: true, longNose: true },
   henry: { height: 1.72, coat: '#7a6a48', trousers: '#6a5a40', vest: '#5a4a32', hair: '#2a1e16', skin: '#d8a888', sideburns: true },
+  barrymore: { height: 1.82, coat: '#161616', coatLen: 0.45, trousers: '#161616', vest: '#202020', hair: '#141010', beard: '#141010', skin: '#e0c0a0' },
+  mrsb: { height: 1.62, gown: '#2a2630', belt: '#1a1820', hair: '#3a2a20', bun: true, skin: '#e8c8a8' },
+  stapleton: { height: 1.7, coat: '#8a8270', trousers: '#6a6250', hair: '#c8a878', skin: '#e8c8a8', hat: 'straw' },
+  beryl: { height: 1.66, gown: '#e4dcc6', belt: '#5a3a2a', hair: '#1a1210', bun: true, skin: '#dcb088' },
+  laura: { height: 1.64, gown: '#4a6a5a', belt: '#2a3a30', hair: '#8a4a2a', bun: true, skin: '#f0d0b8' },
+  frankland: { height: 1.7, coat: '#6a5a3a', trousers: '#5a4a30', hair: '#e8e8e8', sideburns: true, skin: '#e0a080', moustache: '#e8e8e8' },
+  selden: { height: 1.75, coat: '#5a4a32', trousers: '#4a3a28', hair: '#2a2018', wildBeard: '#2a2018', skin: '#c8a080' },
+  clayton: { height: 1.72, coat: '#3a3a2a', coatLen: 0.5, trousers: '#2a2a22', hair: '#6a5a40', moustache: '#6a5a40', hat: 'bowler', skin: '#d8b090' },
+  lestrade: { height: 1.6, coat: '#5a4a3a', coatLen: 0.5, trousers: '#3a3028', hair: '#3a2a1a', moustache: '#3a2a1a', hat: 'bowler', skin: '#e0c0a0' },
+  cartwright: { height: 1.4, coat: '#4a4a5a', trousers: '#3a3a40', hair: '#6a4a2a', hat: 'cap', skin: '#ecc8a8' },
 };
-export const NAMES = { shizuku: '雫', watson: 'ワトソン', holmes: 'ホームズ', mortimer: 'モーティマー', henry: 'ヘンリー卿', dog: '犬' };
+// 外出着（同じ人の服を着替える）
+const OUTFIT = {
+  holmes: { height: 1.86, coat: '#5a5446', coatLen: 0.5, trousers: '#4a463c', hair: '#1e1a18', flatHair: true, skin: '#e6cdb6', longNose: true, hat: 'cap', hatColor: '#4a4438' },
+  watson: { height: 1.76, coat: '#5a4a36', coatLen: 0.45, trousers: '#4a4038', vest: '#6a5a40', hair: '#6a4a2a', moustache: '#5a3a1e', skin: '#e8c4a4', hat: 'bowler' },
+  henry: { height: 1.72, coat: '#7a6a48', trousers: '#6a5a40', vest: '#5a4a32', hair: '#2a1e16', skin: '#d8a888', sideburns: true, hat: 'cap', hatColor: '#6a5a3a' },
+  selden_henry: { height: 1.75, coat: '#7a6a48', trousers: '#6a5a40', vest: '#5a4a32', hair: '#2a2018', wildBeard: '#2a2018', skin: '#c8a080' },
+};
+export const NAMES = { shizuku: '雫', watson: 'ワトソン', holmes: 'ホームズ', mortimer: 'モーティマー', henry: 'ヘンリー卿', dog: '犬', barrymore: 'バリモア', mrsb: 'バリモア夫人', stapleton: 'ステイプルトン', beryl: 'ベリル', laura: 'ローラ・ライオンズ', frankland: 'フランクランド', selden: 'セルデン', clayton: '御者クレイトン', lestrade: 'レストレード', cartwright: 'カートライト', hound: '魔犬' };
 
 function blob(parent, r = 0.32) {
   const m = new THREE.Mesh(new THREE.CircleGeometry(r, 16), new THREE.MeshBasicMaterial({ color: '#000', transparent: true, opacity: 0.28, depthWrite: false }));
@@ -38,7 +57,7 @@ export async function initWorld(onProgress) {
   const room = buildRoom();
   const alley = buildAlley();
   const street = buildStreet();
-  for (const a of [room, alley, street]) { buildNav(a, a.W, a.D); world.areas[a.id] = a; }
+  for (const a of [room, alley, street, buildHotel(), buildHall(), buildOffice(), buildMoor()]) { buildNav(a, a.W, a.D); world.areas[a.id] = a; }
   world.room = room;
   // 雫（VRM）
   const vrm = await loadVRM(new URL('../assets/vrm/lite/shizuku2.vrm', import.meta.url).href, onProgress);
@@ -46,12 +65,14 @@ export async function initWorld(onProgress) {
   sg.add(vrm.scene);
   const sh = addActor('shizuku', sg, 2.6, 1.3, 'vrm');
   sh.vrm = vrm; sh.speed = 2.3;
-  for (const id of ['watson', 'holmes', 'mortimer', 'henry']) {
+  for (const id of ['watson', 'holmes', 'mortimer', 'henry', 'barrymore', 'mrsb', 'stapleton', 'beryl', 'laura', 'frankland', 'selden', 'clayton', 'lestrade', 'cartwright']) {
     const a = addActor(id, makeFigure(SPEC[id]), -10, -10, 'fig');
     a.g.visible = false; a.visible = false;
   }
   const dog = addActor('dog', makeDog(), -10, -10, 'dog');
   dog.g.visible = false; dog.visible = false; dog.speed = 1.9;
+  const hound = addActor('hound', makeDog({ hound: true }), -10, -10, 'dog');
+  hound.g.visible = false; hound.visible = false; hound.speed = 6;
   world.actors.watson.speed = 1.3;
   world.actors.holmes.speed = 1.5;
   setupInput();
@@ -62,6 +83,7 @@ export async function initWorld(onProgress) {
 // 場面（エリア）を切り替える：見える物・歩ける場所・明かり・カメラが入れ替わる
 export function setArea(id) {
   exitLook();
+  world.fresh = false;
   const a = world.areas[id];
   for (const o of Object.values(world.areas)) o.g.visible = o === a;
   world.room = a;
@@ -124,6 +146,20 @@ export function place(id, x, z, face) {
   a.g.position.set(x, 0, z);
   a.g.visible = a.visible = true;
   if (face != null) a.g.rotation.y = face;
+}
+// 服を着替える（key：OUTFIT の名前。null で元の服）
+export function setOutfit(id, key) {
+  const a = world.actors[id];
+  const spec = key ? OUTFIT[key] : SPEC[id];
+  if (!spec || a.outfit === key) return;
+  a.outfit = key;
+  const old = a.g, fig = makeFigure(spec);
+  fig.traverse(o => { o.userData.actor = id; });
+  blob(fig, 0.3);
+  fig.position.copy(old.position); fig.rotation.copy(old.rotation); fig.visible = old.visible;
+  fig.userData.fig.pose = old.userData.fig.pose;
+  scene.remove(old); scene.add(fig);
+  a.g = fig;
 }
 export function hide(id) { const a = world.actors[id]; a.g.visible = a.visible = false; a.path = null; }
 export function setPose(id, pose) {
@@ -510,7 +546,7 @@ function updateCamera(dt) {
   camState.yaw += dy * Math.min(1, dt * 8);
   const cy = Math.cos(camState.yaw), syw = Math.sin(camState.yaw);
   CAM_DIR.set(BASE.x * cy + BASE.z * syw, BASE.y, -BASE.x * syw + BASE.z * cy);
-  let tx, tz, zoom = camState.zoom;
+  let tx, tz, zoom = camState.zoom * (world.room.cam.zoom || 1);   // 広い場所は、少し引いて映す
   if (focus.on) { tx = focus.x; tz = focus.z; zoom *= focus.zoom; }
   else {
     // 縦長の画面では部屋の幅がほぼ収まるので、雫に少しだけ寄せる（寄るほど、雫を追う）

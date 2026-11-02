@@ -376,10 +376,14 @@ async function endCard() {
   const c = $('card');
   c.className = 'card end';
   c.innerHTML = `<p class="chap">第3章</p><h2>ヘンリー・バスカヴィル卿</h2><p class="next-ch">つづく ―― 次は、切れた三本の糸</p>
-    <button class="primary" id="toTitle">タイトルへ</button>`;
+    <button class="primary" id="toNext">次の章へ</button><button class="ghost" id="toTitle">タイトルへ</button>`;
   c.classList.remove('hidden');
-  await new Promise(res => { $('toTitle').onclick = res; arm(c, 'button'); });
-  location.reload();
+  await new Promise(res => {
+    $('toNext').onclick = res;
+    $('toTitle').onclick = () => { S.step = 'c4'; save(); location.reload(); };
+    arm(c, 'button');
+  });
+  c.classList.add('hidden');
 }
 
 export async function runChapter3() {

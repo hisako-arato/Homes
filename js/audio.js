@@ -71,3 +71,20 @@ export function startFire() {
   s.start();
   fireNode = g;
 }
+
+// 魔犬の遠吠え（低く長く、上がって下がる）
+export function howl() {
+  const c = ac(); if (!c || muted) return;
+  const o = c.createOscillator(), o2 = c.createOscillator(), g = c.createGain();
+  o.type = 'sawtooth'; o2.type = 'sine';
+  const t = c.currentTime;
+  for (const [x, f] of [[o, 1], [o2, 1.5]]) { x.frequency.setValueAtTime(140 * f, t); x.frequency.linearRampToValueAtTime(260 * f, t + 1.2); x.frequency.linearRampToValueAtTime(120 * f, t + 3.2); }
+  const f = c.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = 700;
+  g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(0.09 * master / 0.8, t + 0.6); g.gain.linearRampToValueAtTime(0, t + 3.3);
+  o.connect(f); o2.connect(f); f.connect(g).connect(c.destination);
+  o.start(t); o2.start(t); o.stop(t + 3.4); o2.stop(t + 3.4);
+}
+// 叫び声（遠くで）
+export function scream() { tone(880, 0, 0.9, 'sawtooth', 0.04); tone(660, 0.3, 1.1, 'sawtooth', 0.035); noise(1.2, 0.15, 2500); }
+// 銃声
+export function bang() { noise(0.35, 1.2, 800); tone(70, 0, 0.3, 'sine', 0.3); }

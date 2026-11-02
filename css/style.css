@@ -386,3 +386,24 @@ body.looking #lookUI { display: flex; }
 /* 見回し中は、画面のまんなかに小さな目印 */
 body.looking #labels::after { content: ''; position: fixed; left: 50%; top: 50%; width: 10px; height: 10px; margin: -5px 0 0 -5px; border: 2px solid rgba(255, 243, 200, .7); border-radius: 50%; }
 body.looking #labels .label { pointer-events: auto; cursor: pointer; padding: 4px 10px; }
+
+/* 第4章からの紙もの・眺め */
+.card.ashcard, .card.telecard, .card.portcard, .card.wincard { cursor: default; padding: 12px; background: radial-gradient(circle at 50% 40%, #3a2e26 0%, #0c0908 80%); }
+.ash, .tele, .port, .mwin { width: min(440px, 100%); display: flex; flex-direction: column; gap: 10px; align-items: center; }
+.atitle { color: var(--gold); margin: 0; font-size: 15px; letter-spacing: .08em; }
+.atip { margin: 0; font-size: 14px; min-height: 3em; }
+.atip b { color: var(--gold); }
+.ash .paper { background: radial-gradient(circle at 40% 50%, #e8dcc0, #a08060 70%, #3a2a1a); border-radius: 30% 20% 35% 25%; padding: 26px 18px; display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; width: 100%; }
+.ash .ab { font: 18px Georgia, serif; color: transparent; background: #2a2420; border-radius: 6px; padding: 4px 8px; cursor: pointer; box-shadow: 0 0 10px #000; animation: glowk 1.4s ease-in-out infinite; }
+.ash .ab.open { color: #2a1a10; background: transparent; box-shadow: none; animation: none; }
+.tele .scope { width: 100%; aspect-ratio: 1; touch-action: none; }
+.tele canvas { width: 100%; height: 100%; touch-action: none; }
+.port .frame { width: 70%; border: 10px solid #8a6a2a; box-shadow: 0 10px 30px #000; }
+.port .frame svg { display: block; width: 100%; }
+.port .part { cursor: pointer; transition: opacity .5s; animation: glowk 1.4s ease-in-out infinite; }
+.port .part.gone { opacity: 0; pointer-events: none; }
+.port .frame.reveal { box-shadow: 0 0 30px rgba(227,192,111,.9); }
+.mwin .glass { width: 100%; box-shadow: 0 10px 30px #000; }
+.mwin svg { display: block; width: 100%; }
+#nextBtn { position: fixed; left: 50%; bottom: calc(18px + var(--safe-b)); transform: translateX(-50%); z-index: 6; width: min(240px, 60%);
+  background: var(--gold); color: #1a1210; font-weight: bold; box-shadow: 0 0 16px rgba(227,192,111,.6); }

@@ -24,3 +24,6 @@ export const STEPS = ['intro', 'explore', 'holmes', 'window', 'end',
   'c3', 'c3morning', 'c3letter', 'c3quiz', 'c3explain', 'c3street', 'c3office', 'end3'];
 export const stepIndex = s => Math.max(0, STEPS.indexOf(s));
 export const reached = s => stepIndex(S.step) >= stepIndex(s);
+
+// 第4章からの場面の名前（[章, 場面]）
+export const STEP_LABEL = {};

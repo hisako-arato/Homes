@@ -11,6 +11,17 @@ import { arm } from './tap.js';
 import { chime, bell, door, fanfare, miss } from './audio.js';
 import { runChapter2 } from './chapter2.js';
 import { runChapter3 } from './chapter3.js';
+import './data2.js';
+import { runChapter4 } from './ch04.js';
+import { runChapter5 } from './ch05.js';
+import { runChapter6 } from './ch06.js';
+import { runChapter7 } from './ch07.js';
+import { runChapter8 } from './ch08.js';
+import { runChapter9 } from './ch09.js';
+import { runChapter10 } from './ch10.js';
+import { runChapter11 } from './ch11.js';
+import { runChapter12 } from './ch12.js';
+import { runChapter13 } from './ch13.js';
 
 const $ = id => document.getElementById(id);
 const A = id => world.actors[id];
@@ -418,11 +429,15 @@ export async function runChapter1() {
 }
 
 // ゲーム全体の入口：セーブの場所から、章を順に進める
+// 章の番号（セーブの場所から）：'c4b' → 4、'end3' → 3、'fin' → 13
+const chapterOf = s => (s === 'fin' ? 13 : /^c(\d+)/.test(s) ? +s.match(/^c(\d+)/)[1] : /^end(\d+)/.test(s) ? +s.match(/^end(\d+)/)[1] : 1);
+const LATER = [null, null, null, null, runChapter4, runChapter5, runChapter6, runChapter7, runChapter8, runChapter9, runChapter10, runChapter11, runChapter12, runChapter13];
 export async function runGame() {
-  const ch = S.step.startsWith('c3') || S.step === 'end3' ? 3 : S.step.startsWith('c2') || S.step === 'end2' ? 2 : 1;
+  const ch = chapterOf(S.step);
   if (ch === 1) { await runChapter1(); S.step = 'c2'; save(); }
   if (ch <= 2) { await runChapter2(); S.step = 'c3'; save(); }
-  await runChapter3();
+  if (ch <= 3) { await runChapter3(); S.step = 'c4'; save(); }
+  for (let n = Math.max(4, ch); n <= 13; n++) await LATER[n]();
 }
 
 export { THREE };

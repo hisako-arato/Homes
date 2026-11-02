@@ -164,17 +164,21 @@ export const PERSONS = {
   hugo: { name: 'ヒューゴ・バスカヴィル', line: '1742年の伝説の主人。\n魔犬に襲われた' },
 };
 // 相関図に出す人：会った人と、話に出てきた人
+export const EXTRA_KNOWN = [];   // [id, 条件] 会っていなくても、話に出てきたら相関図に出す
 function knownPersons() {
   const ids = ['shizuku', ...S.persons];
+  for (const [id, cond] of EXTRA_KNOWN) if (cond()) ids.push(id);
   if (S.clues.includes('legend')) ids.push('hugo');
   if (S.clues.includes('paper')) ids.push('charles');
   if (reached('c2leave')) ids.push('henry');
   return [...new Set(ids)];
 }
 // 人物の相関図（SVG）。位置は固定、線は両端の人がそろったときだけ引く
-const NODE = { shizuku: [50, 150], watson: [170, 46], holmes: [310, 46], mortimer: [310, 176], charles: [170, 200], henry: [170, 316], hugo: [50, 316] };
-const LABEL = { shizuku: '雫', watson: 'ワトソン', holmes: 'ホームズ', mortimer: 'モーティマー', charles: 'サー・チャールズ', henry: 'ヘンリー卿', hugo: 'ヒューゴ' };
-const EDGES = [
+export const CHART_H = { h: 370 };
+export const DEAD = [['charles', () => true], ['hugo', () => true]];
+export const NODE = { shizuku: [50, 150], watson: [170, 46], holmes: [310, 46], mortimer: [310, 176], charles: [170, 200], henry: [170, 316], hugo: [50, 316] };
+export const LABEL = { shizuku: '雫', watson: 'ワトソン', holmes: 'ホームズ', mortimer: 'モーティマー', charles: 'サー・チャールズ', henry: 'ヘンリー卿', hugo: 'ヒューゴ' };
+export const EDGES = [
   ['shizuku', 'watson', '話せる'], ['shizuku', 'holmes', '見えない', true], ['watson', 'holmes', '相棒'],
   ['mortimer', 'holmes', '相談'], ['henry', 'mortimer', '付きそい'], ['mortimer', 'charles', '主治医・友人'], ['charles', 'henry', '甥・跡継ぎ'], ['hugo', 'charles', '先祖', true],
 ];
@@ -182,11 +186,12 @@ function relationChart() {
   const ids = knownPersons();
   const has = id => ids.includes(id);
   const face = id => { const f = document.querySelector(`#faces img[data-id="${id}"]`); return f ? f.src : ''; };
-  let svg = '<svg viewBox="0 0 360 370" class="chart"><defs>';
-  for (const id of ids) svg += `<clipPath id="cp-${id}"><circle cx="${NODE[id][0]}" cy="${NODE[id][1]}" r="24"/></clipPath>`;
+  let svg = `<svg viewBox="0 0 360 ${CHART_H.h}" class="chart"><defs>`;
+  for (const id of ids.filter(i => NODE[i])) svg += `<clipPath id="cp-${id}"><circle cx="${NODE[id][0]}" cy="${NODE[id][1]}" r="24"/></clipPath>`;
   svg += '</defs>';
-  for (const [a, b, l, dash] of EDGES) {
-    if (!has(a) || !has(b)) continue;
+  for (const [a, b, l0, dash, cond] of EDGES) {
+    if (!has(a) || !has(b) || (cond && !cond())) continue;
+    const l = typeof l0 === 'function' ? l0() : l0;
     const [x1, y1] = NODE[a], [x2, y2] = NODE[b];
     svg += `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="#8a7a5a" stroke-width="2" ${dash ? 'stroke-dasharray="5 4"' : ''}/>`;
     const mx = (x1 + x2) / 2, my = (y1 + y2) / 2;
@@ -194,7 +199,8 @@ function relationChart() {
     svg += `<text x="${mx}" y="${my + 4}" text-anchor="middle" font-size="11" fill="#e8dcc6">${l}</text>`;
   }
   for (const id of ids) {
-    const [x, y] = NODE[id], src = face(id), dead = id === 'charles' || id === 'hugo';
+    if (!NODE[id]) continue;
+    const [x, y] = NODE[id], src = face(id), dead = DEAD.some(([d, c]) => d === id && c());
     svg += `<circle cx="${x}" cy="${y}" r="26" fill="#3a2e28" stroke="${id === 'shizuku' ? '#ff8aa8' : '#e3c06f'}" stroke-width="2"/>`;
     svg += src ? `<image href="${src}" x="${x - 24}" y="${y - 24}" width="48" height="48" clip-path="url(#cp-${id})"/>`
       : `<text x="${x}" y="${y + 7}" text-anchor="middle" font-size="20" fill="${dead ? '#8a8a8a' : '#e8dcc6'}">${LABEL[id][0]}</text>`;
@@ -203,7 +209,16 @@ function relationChart() {
   return svg + '</svg>';
 }
 const iconCache = {};
-export const iconOf = id => iconCache[id] || (iconCache[id] = ICONS[id]());
+// 絵記号のアイコン（第4章からの手がかり。GLYPHS[id] = [記号, 地の色]）
+export const GLYPHS = {};
+function glyphIcon([ch, bg = '#3a2e28']) {
+  return icon((g, w, h) => {
+    g.fillStyle = bg; g.beginPath(); g.roundRect(6, 6, w - 12, h - 12, 14); g.fill();
+    g.font = '52px "Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle';
+    g.fillText(ch, w / 2, h / 2 + 3);
+  });
+}
+export const iconOf = id => iconCache[id] || (iconCache[id] = ICONS[id] ? ICONS[id]() : glyphIcon(GLYPHS[id] || ['？']));
 
 // 犬の影絵（小・中・大）
 function dogIcon(size) {
@@ -288,7 +303,7 @@ export const QSETS = {
   },
 };
 export const QUESTIONS = QSETS.c1.qs;
-const ALLQ = () => [...QSETS.c1.qs, ...QSETS.c2.qs, ...QSETS.c3.qs];
+const ALLQ = () => Object.values(QSETS).flatMap(s => s.qs || []);
 
 // ---- 用語（当時の言葉や、知らないと推理できない知識）。cond：見られるようになる条件 ----
 export const TERMS = [

@@ -2,7 +2,8 @@
 // 設定と操作説明は、タイトル画面からも開く
 import { world, history, snapshot, goTo, NAMES } from './play.js';
 import { THREE } from './engine.js';
-import { S, save, KEY, STEPS, stepIndex, reached } from './save.js';
+import { S, save, KEY, STEPS, stepIndex, reached, STEP_LABEL } from './save.js';
+import { LATE } from './data2.js';
 export { STEPS, stepIndex, reached };
 import { openNotebook, QSETS, iconOf } from './notebook.js';
 import { VERSION, VERSION_DATE } from './version.js';
@@ -22,7 +23,7 @@ const STEP_NAME = {
   c3: ['第3章', 'たばこの煙の夜'], c3morning: ['第3章', 'ヘンリー卿'], c3letter: ['第3章', '切り抜きの手紙'], c3quiz: ['第3章', '推理'],
   c3explain: ['第3章', 'ホームズの見立て'], c3street: ['第3章', 'リージェント街'], c3office: ['第3章', '使い走りの事務所の前'], end3: ['第3章', 'おわり'],
 };
-export const stepLabel = s => (STEP_NAME[s] || ['', '']).join('　');
+export const stepLabel = s => (STEP_NAME[s] || STEP_LABEL[s] || ['', '']).join('　');
 
 // ---- 画面の設定（文字の大きさ・明るさ）。端末に覚える ----
 const SET_KEY = 'homes-settings';
@@ -60,7 +61,7 @@ function wireBack(m, fn = openMenu) { m.querySelector('[data-back]').onclick = (
 // ================= メニュー =================
 export function openMenu() {
   page();
-  const [chap, scene] = STEP_NAME[S.step] || ['', ''];
+  const [chap, scene] = STEP_NAME[S.step] || STEP_LABEL[S.step] || ['', ''];
   const area = world.room && world.room.name;
   const m = panel(`<p class="where"><b>${chap}</b>　${scene}${area ? `<br><small>${area}</small>` : ''}</p>
     <div class="mgrid">
@@ -231,6 +232,11 @@ function openRecap() {
     if (reached('c3office')) c.push(card(iconOf('cab'), 'ヘンリー卿をつける辻馬車2704と、黒ひげの男'));
     ch.push(['第3章　ヘンリー・バスカヴィル卿', c]);
   }
+  for (const L of LATE) {
+    if (!reached(L.from)) continue;
+    const c = L.recap.filter(([st]) => reached(st)).map(([, icon, text]) => card(iconOf(icon), text));
+    if (c.length) ch.push([`第${L.n}章　${L.title}`, c]);
+  }
   const body = ch.length ? ch.map(([t, c]) => `<h4>${t}</h4><div class="rcards">${c.join('')}</div>`).join('') : '<p class="empty">物語は、まだ始まったばかり</p>';
   const m = panel(`<h3>これまでのあらすじ</h3><div class="recap">${body}</div>${back()}`, 'tall');
   wireBack(m);
@@ -261,6 +267,12 @@ function openScore() {
     const sp = S.examined.includes('spotted');
     rows.push(['第3章　ヘンリー・バスカヴィル卿', [['ホームズと同じ推理', ded('c3')], ['手紙と封筒の手がかり', `${lc} / 5`],
       ['ホームズより先に、馬車に気づいた', reached('c3office') ? (sp ? '1 / 1 <span class="star">★</span>' : '0 / 1') : '<span class="dim">まだ</span>']]]);
+  }
+  for (const L of LATE) {
+    if (!reached(L.from)) continue;
+    const r = [['ホームズと同じ推理', ded(L.set)]];
+    if (L.hidden.length) { const n = L.hidden.filter(c => S.clues.includes(c)).length; r.push(['見つけにくい手がかり', `${n} / ${L.hidden.length}${n === L.hidden.length ? ' <span class="star">★</span>' : ''}`]); }
+    rows.push([`第${L.n}章　${L.title}`, r]);
   }
   const rate = askAll ? Math.round(hitAll / askAll * 100) : null;
   const body = rows.map(([t, r]) => `<h4>${t}</h4><table class="score">${r.map(([k, v]) => `<tr><th>${k}</th><td>${v}</td></tr>`).join('')}</table>`).join('');

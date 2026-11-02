@@ -227,6 +227,27 @@ export function makeFigure(spec) {
       head.add(rim);
     }
   }
+  if (spec.bun) {   // 結い上げた髪（女性）
+    const bn = new THREE.Mesh(new THREE.IcosahedronGeometry(hs * 0.55, 1), hair);
+    bn.position.set(0, hs * 1.55, -hs * 0.75); head.add(bn);
+  }
+  if (spec.longHair) {
+    const lh = new THREE.Mesh(new THREE.BoxGeometry(hs * 1.9, hs * 1.6, hs * 0.5), hair);
+    lh.position.set(0, hs * 0.4, -hs * 0.75); head.add(lh);
+  }
+  if (spec.wildBeard) {   // ぼうぼうのひげ（脱獄囚）
+    const wb = new THREE.Mesh(new THREE.IcosahedronGeometry(hs * 0.85, 0), m(spec.wildBeard));
+    wb.scale.set(1, 1.1, 0.7); wb.position.set(0, hs * 0.35, hs * 0.5); head.add(wb);
+  }
+  if (spec.hat) {   // 帽子：bowler（山高帽）／top（シルクハット）／cap（鳥打帽）／straw（麦わら帽）／bonnet（婦人帽）
+    const hc = m(spec.hatColor || (spec.hat === 'straw' ? '#d8c088' : '#1e1c1c'));
+    const brim = new THREE.Mesh(new THREE.CylinderGeometry(hs * (spec.hat === 'straw' ? 1.7 : 1.3), hs * (spec.hat === 'straw' ? 1.7 : 1.3), 0.015, 12), hc);
+    brim.position.y = hs * 1.85; head.add(brim);
+    const crownH = spec.hat === 'top' ? hs * 1.4 : spec.hat === 'cap' ? hs * 0.35 : hs * 0.7;
+    const crown = new THREE.Mesh(new THREE.CylinderGeometry(hs * 0.92, hs * 0.98, crownH, 12), hc);
+    crown.position.y = hs * 1.85 + crownH / 2; head.add(crown);
+    if (spec.hat === 'cap') { brim.scale.set(0.8, 1, 1.1); brim.position.z = hs * 0.3; }
+  }
   root.userData.fig = { legs, arms, body, head, hipY, s, walk: 0, amt: 0, t: Math.random() * 9, sit: 0, pose: null };
   root.traverse(o => { if (o.isMesh) o.castShadow = true; });
   return root;
@@ -253,9 +274,10 @@ export function animateFigure(root, moving, dt) {
 }
 
 // 犬（巻き毛のスパニエル）
-export function makeDog() {
+// opt.hound：魔犬（大きく黒い。口と目が、燐でぼうっと光る）
+export function makeDog(opt = {}) {
   const g = new THREE.Group();
-  const brown = mat('#7a4a26'), white = mat('#e8e0d0');
+  const brown = opt.hound ? mat('#121212') : mat('#7a4a26'), white = opt.hound ? mat('#1a1a1a') : mat('#e8e0d0');
   const b = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.2, 0.5), brown); b.position.y = 0.3; g.add(b);
   const chest = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.16, 0.12), white); chest.position.set(0, 0.28, 0.22); g.add(chest);
   const head = new THREE.Mesh(new THREE.BoxGeometry(0.17, 0.17, 0.2), brown); head.position.set(0, 0.45, 0.3); g.add(head);
@@ -268,6 +290,13 @@ export function makeDog() {
     const l = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.22, 0.06), brown); l.position.set(x, 0.11, z); g.add(l); legs.push(l);
   }
   const tail = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.05, 0.16), brown); tail.position.set(0, 0.4, -0.3); tail.rotation.x = 0.6; g.add(tail);
+  if (opt.hound) {
+    const glow = new THREE.MeshBasicMaterial({ color: '#b8ff9a', transparent: true, opacity: 0.85 });
+    const muzzle = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.1, 0.13), glow); muzzle.position.set(0, 0.42, 0.45); g.add(muzzle);
+    for (const side of [-1, 1]) { const eye = new THREE.Mesh(new THREE.SphereGeometry(0.025, 6, 4), glow); eye.position.set(side * 0.05, 0.5, 0.4); g.add(eye); }
+    const halo = new THREE.PointLight('#a8ff8a', 1.6, 4, 1.5); halo.position.set(0, 0.5, 0.45); g.add(halo);
+    g.scale.setScalar(2.3);
+  }
   g.traverse(o => { if (o.isMesh) o.castShadow = true; });
   g.userData.dog = { legs, tail, t: 0 };
   return g;
