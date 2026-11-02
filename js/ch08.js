@@ -5,7 +5,7 @@ import { THREE } from './engine.js';
 import { A, L, cast, enter, investigate, quiz, grade, registerSteps, runSteps, endCard, titleCard, placeCard, world, place, walkTo, walkStraight, faceTo, faceActor, setArea, fade, addClue, addPerson, mood, hide, ensure, wait, watsonTalk, found } from './scene.js';
 
 registerSteps('第8章', [['c8', '窓辺の見張り'], ['c8b', 'バリモア夫人の打ち明け話'], ['c8c', '夜の荒野'], ['c8e', '岩山の人影'], ['c8f', '推理']]);
-const HALL_NIGHT = { bg: '#0a080c', fog: [30, 46], hemi: ['#9a90b8', '#18141c', 0.75], sun: 0 };
+const HALL_NIGHT = { bg: '#100c10', fog: [32, 50], hemi: ['#d4c6d4', '#4a3e44', 1.4], sun: 0 };   // 夜の館（ろうそくの明かりで、足元が見える程度）
 let candle = null;
 
 async function watch() {

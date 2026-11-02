@@ -66,10 +66,10 @@ export function buildHotel() {
 export function buildHall() {
   const k = kit('hall', 'バスカヴィル館', 14, 12);
   const { g } = k;
-  floor(g, 14, 12, new THREE.MeshStandardMaterial({ map: tiled(TEX.floor, 6, 5), color: '#a89078' }), 7, 6);
+  floor(g, 14, 12, new THREE.MeshStandardMaterial({ map: tiled(TEX.floor, 6, 5), color: '#dcc4a4' }), 7, 6);
   floor(g, 6, 4, new THREE.MeshStandardMaterial({ map: TEX.rug }), 6, 6.5, 0.005);
-  const stone = new THREE.MeshStandardMaterial({ map: tiled(TEX.brick, 6, 2), color: '#9a9088' });
-  const oak = mat('#3a2414');
+  const stone = new THREE.MeshStandardMaterial({ map: tiled(TEX.brick, 6, 2), color: '#d8cec2' });
+  const oak = mat('#5a3a22');
   const back = k.wall([0, -1]), left = k.wall([-1, 0]), right = k.wall([1, 0]);
   box(back, 14, 4.5, 0.3, stone, 7, 0, -0.15); k.solid(0, 14, -0.4, 0.15);
   box(back, 14, 1.2, 0.08, oak, 7, 0, 0.05);
@@ -108,11 +108,13 @@ export function buildHall() {
   k.thing('armor', '古い鎧', [1.0, 0, 10.8, 0.5, 2.1, 0.5], [1.9, 10.6]);
   for (const x of [3.6, 11]) { box(back, 0.5, 0.06, 0.06, mat('#c8b890'), x, 3.6, 0.2); }
   // 燭台の明かり
-  const lamp = new THREE.PointLight('#ffd0a0', 2.5, 10, 1.4); lamp.position.set(7, 3.2, 6); g.add(lamp);
+  const lamp = new THREE.PointLight('#ffd0a0', 6, 16, 1.1); lamp.position.set(7, 3.2, 6); g.add(lamp);
+  // 奥と階段のあたりの燭台（館の隅が暗く沈みすぎないように）
+  for (const [x, z] of [[3.5, 2.5], [11, 9]]) { const l = new THREE.PointLight('#ffc890', 3, 9, 1.3); l.position.set(x, 2.6, z); g.add(l); }
   Object.assign(k.area, {
     fire, lamp, start: [7, 9],
     cam: { cx: 7, cz: 6, fx: 0.45, fz: 0.45, lfx: 0.6, lfz: 0.6, zoom: 0.78 },
-    mood: { bg: '#151314', fog: [32, 48], hemi: ['#e8d8c0', '#2a2420', 0.85], sun: 0.6 },
+    mood: { bg: '#1c1816', fog: [34, 52], hemi: ['#f4e8d4', '#5e5244', 1.45], sun: 0.95 },
   });
   return k.area;
 }

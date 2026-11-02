@@ -2,7 +2,7 @@
 // ・プログラム（html・css・js・ライブラリ・アイコン）は、版ごとのキャッシュ（homes-<版>）。版が上がると入れ替わる
 // ・大きなデータ（assets/：人物のモデル・顔の絵）は、版をまたいで残すキャッシュ（homes-assets）。中身が変わった物だけ取り直す
 // 公開するファイルの一覧は files.json（tools/make_manifest.py が作る）
-const CACHE = 'homes-0.9.2';
+const CACHE = 'homes-0.9.4';
 const ASSETS = 'homes-assets';
 const HASHES = 'https://homes.local/__asset-hashes';   // homes-assets の中に、保存した物のハッシュを覚えておく場所
 

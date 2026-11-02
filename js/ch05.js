@@ -4,7 +4,7 @@ import { A, L, cast, enter, investigate, quiz, grade, registerSteps, runSteps, e
 import { howl } from './audio.js';
 
 registerSteps('第5章', [['c5', 'パディントン駅'], ['c5b', '荒野へ'], ['c5c', '館の大広間'], ['c5d', '館の夜'], ['c5e', '翌朝']]);
-const HALL_NIGHT = { bg: '#0c0a0c', fog: [30, 46], hemi: ['#a898b8', '#181420', 0.75], sun: 0 };
+const HALL_NIGHT = { bg: '#100c10', fog: [32, 50], hemi: ['#d4c6d4', '#4a3e44', 1.4], sun: 0 };   // 夜の館（ろうそくの明かりで、足元が見える程度）
 
 async function station() {
   await titleCard('第5章', 'バスカヴィル館');

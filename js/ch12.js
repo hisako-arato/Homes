@@ -7,7 +7,7 @@ import { bang, howl, scream } from './audio.js';
 import { MIRE_PATH } from './moor.js';
 
 registerSteps('第12章', [['c12', '肖像画の顔'], ['c12b', '網を張る'], ['c12c', '霧のメリピット荘'], ['c12d', '霧の中から'], ['c12f', 'ベリル'], ['c12g', '朝の大沼'], ['c12h', '推理']]);
-const HALL_NIGHT = { bg: '#0c0a0c', fog: [30, 46], hemi: ['#b8a8c0', '#181420', 0.85], sun: 0 };
+const HALL_NIGHT = { bg: '#100c10', fog: [32, 50], hemi: ['#d4c6d4', '#4a3e44', 1.4], sun: 0 };   // 夜の館（ろうそくの明かりで、足元が見える程度）
 const HIDE = [[42.4, 35.6], [41.8, 34.8], [42.0, 36.4]];
 
 async function portrait() {
