@@ -8,6 +8,7 @@ import { openNotebook, QSETS, iconOf } from './notebook.js';
 import { VERSION, VERSION_DATE } from './version.js';
 import { isMuted, setMuted, getVolume, setVolume, page } from './audio.js';
 import { arm } from './tap.js';
+import * as offline from './offline.js';
 
 const $ = id => document.getElementById(id);
 const SLOTS = 3;
@@ -272,7 +273,9 @@ let installEvt = null;
 addEventListener('beforeinstallprompt', e => { e.preventDefault(); installEvt = e; });
 const standalone = () => matchMedia('(display-mode: standalone)').matches || matchMedia('(display-mode: fullscreen)').matches || navigator.standalone;
 const isIOS = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+let settingsBack = null;
 export function openSettings(onBack = null, extra = '') {
+  settingsBack = onBack;
   const installHtml = standalone()
     ? '<p class="hint">アプリとして遊んでいます。</p>'
     : installEvt ? '<button id="install">ホーム画面に追加（アプリにする）</button>'
@@ -285,6 +288,8 @@ export function openSettings(onBack = null, extra = '') {
     <div class="setrow"><span>文字の大きさ</span>${seg('fs', prefs.fs, [['s', '小'], ['m', '中'], ['l', '大']])}</div>
     <div class="setrow"><span>画面の明るさ</span>${seg('bright', prefs.bright, [[1, 'ふつう'], [1.25, '明るい'], [1.5, 'とても明るい']])}</div>
     <p class="sample">台詞の文字は、このくらいの大きさになります。</p>
+    <div class="offbox"><b>オフライン用データ</b><p class="hint" id="offMsg">確かめています……</p>
+      <div class="bar hidden" id="offBar"><i></i></div><button id="offBtn" class="hidden">Wi-Fiでダウンロード</button></div>
     ${installHtml}
     <button id="update">最新版を確かめる</button><p class="hint" id="updMsg"></p>
     ${extra}
@@ -304,8 +309,71 @@ export function openSettings(onBack = null, extra = '') {
   }));
   if ($('install')) $('install').onclick = async () => { installEvt.prompt(); await installEvt.userChoice; installEvt = null; openSettings(onBack, extra); };
   $('update').onclick = checkUpdate;
+  renderOffline();
   return m;
 }
+// ---- オフライン用データ（設定の中） ----
+async function renderOffline() {
+  const msg = $('offMsg'), btn = $('offBtn'), bar = $('offBar');
+  if (!msg) return;
+  const st = await offline.status();
+  if (!$('offMsg')) return;
+  btn.classList.add('hidden');
+  if (!st.ok) { msg.textContent = st.reason; return; }
+  if (st.offline) { msg.innerHTML = st.done ? 'ネットにつながっていません。<b class="okc">オフラインで遊べます ✓</b>' : 'ネットにつながっていません。ダウンロードは、つながっているときに'; return; }
+  if (st.newer) { msg.innerHTML = `新しい版（ver ${st.newer}）があります。先に「最新版を確かめる」で更新してください`; return; }
+  const info = await offline.storageInfo();
+  const keep = info.persisted ? '（端末に固定して保存）' : '';
+  if (st.done && !offline.controlled()) {
+    msg.innerHTML = `<b class="okc">ダウンロード済み ✓</b>　ver ${st.version}・${offline.mb(st.total)}MB<br>仕上げに、ページを一度開き直してください。それでネットが無くても遊べます`;
+    btn.textContent = '開き直す'; btn.classList.remove('hidden');
+    btn.onclick = () => location.reload();
+    arm(btn.parentElement, 'button');
+    return;
+  }
+  if (st.done) { msg.innerHTML = `<b class="okc">ダウンロード済み ✓</b>　ver ${st.version}・${offline.mb(st.total)}MB${keep}<br>ネットが無くても遊べます`; return; }
+  btn.textContent = 'Wi-Fiでダウンロード';
+  msg.innerHTML = `${st.have ? '一部だけ保存されています' : 'まだ保存されていません'}（${offline.mb(st.have)} / ${offline.mb(st.total)}MB）<br>あと ${offline.mb(st.total - st.have)}MB。Wi-Fi につないでからがおすすめです`;
+  btn.classList.remove('hidden');
+  btn.onclick = async () => {
+    const line = offline.lineType();
+    if (line !== 'wifi') {
+      const text = line === 'cellular' ? 'モバイル回線につながっているようです。' : '';
+      if (!await confirmBox(`${text}${offline.mb(st.total - st.have)}MB をダウンロードします。Wi-Fi につながっていますか？`)) return openSettings(settingsBack);
+      openSettings(settingsBack);
+      return startDownload();
+    }
+    startDownload();
+  };
+  arm(btn.parentElement, 'button');
+}
+async function startDownload() {
+  const msg = $('offMsg'), btn = $('offBtn'), bar = $('offBar');
+  btn.classList.add('hidden'); bar.classList.remove('hidden');
+  msg.textContent = 'ダウンロードしています……（この画面のままでお待ちください）';
+  try {
+    await offline.download((have, total) => {
+      if (!$('offBar')) return;
+      bar.firstElementChild.style.width = Math.round(have / total * 100) + '%';
+      msg.textContent = `ダウンロードしています…… ${offline.mb(have)} / ${offline.mb(total)}MB`;
+    });
+    bar.classList.add('hidden');
+    renderOffline();
+    updateOfflineTag();
+  } catch (e) {
+    bar.classList.add('hidden');
+    msg.innerHTML = `途中で止まりました（${e.message || e}）。<br>もう一度押すと、続きから再開します`;
+    btn.classList.remove('hidden');
+  }
+}
+// タイトルの「オフライン：準備OK」の表示
+export async function updateOfflineTag() {
+  const tag = $('offTag');
+  if (!tag) return;
+  const st = await offline.status();
+  tag.innerHTML = st.done && offline.controlled() ? '<span class="okc">オフラインで遊べます ✓</span>' : st.offline ? 'オフライン' : '「設定」からオフライン用データを保存できます';
+}
+
 async function checkUpdate() {
   const msg = $('updMsg');
   msg.textContent = '確かめています……';
@@ -334,6 +402,8 @@ const ICON = {
   talk: '<svg viewBox="0 0 60 60"><path d="M10 14 h40 v24 h-22 l-10 9 v-9 h-8 z" fill="none" stroke="#e3c06f" stroke-width="3" stroke-linejoin="round"/><text x="30" y="32" font-size="14" text-anchor="middle" fill="#e3c06f">▼</text></svg>',
   rotate: '<svg viewBox="0 0 60 60"><rect x="27" y="8" width="6" height="44" rx="3" fill="#8a5a2a"/><path d="M12 30 a18 8 0 1 0 36 0" fill="none" stroke="#e3c06f" stroke-width="3"/><path d="M44 26 L48 30 L42 33" fill="none" stroke="#e3c06f" stroke-width="3"/></svg>',
   note: '<svg viewBox="0 0 60 60"><rect x="14" y="8" width="32" height="44" rx="3" fill="none" stroke="#e3c06f" stroke-width="3"/><path d="M20 20 h20 M20 28 h20 M20 36 h14" stroke="#e3c06f" stroke-width="2"/></svg>',
+  rot: '<svg viewBox="0 0 60 60"><path d="M16 30 a14 14 0 1 1 6 11" fill="none" stroke="#e3c06f" stroke-width="3"/><path d="M10 26 L16 32 L22 26" fill="none" stroke="#e3c06f" stroke-width="3"/><circle cx="30" cy="30" r="4" fill="#e3c06f"/></svg>',
+  eye: '<svg viewBox="0 0 60 60"><path d="M8 30 Q30 10 52 30 Q30 50 8 30 Z" fill="none" stroke="#e3c06f" stroke-width="3"/><circle cx="30" cy="30" r="7" fill="#e3c06f"/></svg>',
   menu: '<svg viewBox="0 0 60 60"><path d="M14 18 h32 M14 30 h32 M14 42 h32" stroke="#e3c06f" stroke-width="4" stroke-linecap="round"/></svg>',
 };
 export function openHelp(onBack = null) {
@@ -343,6 +413,8 @@ export function openHelp(onBack = null) {
     ${item('tap', '調べる・話す', '物や人をタップ。そこまで歩いて調べる。<br>PC：スペース・E で近くの物')}
     ${item('mark', '印', '<span class="g">✦ 金色</span>：まだ調べていない／<span class="d">✓ 灰色</span>：調べた。<br>印の無い所にも、何かあるかもしれない')}
     ${item('list', '選ぶ', '指の近くに物が2つ以上あると、一覧が出る')}
+    ${item('rot', 'カメラを回す・寄る', '右下の ⟲ ⟳ で90度ずつ回す。2本指でひねっても回せる。<br>2本指で広げる・縮めると、寄る・引く。<br>PC：Q・R で回す、ホイールで寄る')}
+    ${item('eye', '見回す（雫の目線）', '右下の 👁 で、雫の目の高さから見る。なぞって見回し、2本指で寄る。<br>近くの物は、名札かその物をタップすると、その場で調べられる。<br>PC：V（Esc でもどる）')}
     ${item('talk', '台詞を進める', '台詞の欄か画面をタップ。<br>（　）の台詞は雫の心の声')}
     ${item('rotate', '手に取って調べる', 'なぞって回し、光る所をタップすると寄って見られる')}
     ${item('note', '推理ノート', '手がかり・人物の相関図・推理')}

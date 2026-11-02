@@ -74,10 +74,11 @@ export function buildAlley() {
   const hedgeM2 = new THREE.MeshStandardMaterial({ map: tiled(hedgeT, 8, 1), roughness: 1, flatShading: true });
   const HH = 3.4;
   // 左：木戸（z 8.4〜9.6）で切れている。手前（あずまやの側）は低く刈り込んで、中が見えるようにする
-  box(g, 1, HH, 8.4, hedgeM2, 0.5, 0, 4.2);
-  box(g, 1, 1.2, 6.4, hedgeM2, 0.5, 0, 9.6 + 3.2);
-  box(g, 1, HH, 9.5, hedgeM2, W - 0.5, 0, 4.75);
-  box(g, 1, 1.2, 6.5, hedgeM2, W - 0.5, 0, 9.5 + 3.25);
+  const hl = new THREE.Group(), hr = new THREE.Group(); g.add(hl, hr);
+  box(hl, 1, HH, 8.4, hedgeM2, 0.5, 0, 4.2);
+  box(hl, 1, 1.2, 6.4, hedgeM2, 0.5, 0, 9.6 + 3.2);
+  box(hr, 1, HH, 9.5, hedgeM2, W - 0.5, 0, 4.75);
+  box(hr, 1, 1.2, 6.5, hedgeM2, W - 0.5, 0, 9.5 + 3.25);
   solid(-1, 1.0, 0, 8.4); solid(-1, 1.0, 9.6, D); solid(W - 1, W + 1, 0, D);
   thing('hedge', 'イチイの生け垣', [W - 0.5, 0, 6, 1.1, HH, 3], [4.6, 6], [W - 0.6, 2.2, 6]);
   // 荒野への木戸（低い。鍵がかかっている）
@@ -97,8 +98,9 @@ export function buildAlley() {
   }
   // 奥の館（窓に灯り。並木道は館の扉から始まる）
   const houseM = new THREE.MeshStandardMaterial({ color: '#5a554c', roughness: 1, flatShading: true });
-  box(g, W + 6, 5, 1, houseM, W / 2, 0, -0.5);
-  box(g, W + 6.4, 0.3, 1.3, mat('#3a3630'), W / 2, 5, -0.5);
+  const house = new THREE.Group(); g.add(house);
+  box(house, W + 6, 5, 1, houseM, W / 2, 0, -0.5);
+  box(house, W + 6.4, 0.3, 1.3, mat('#3a3630'), W / 2, 5, -0.5);
   box(g, 1.1, 2.1, 0.1, M.darkWood, 3, 0, 0.02);
   for (const x of [0.8, 5.2, -1.6, 7.6]) {
     const w = box(g, 0.9, 1.2, 0.06, mat('#ffcf7a', { emissive: '#ffb04a', emissiveIntensity: 1.2 }), x, 1.4, 0.02);
@@ -173,6 +175,7 @@ export function buildAlley() {
 
   return {
     id: 'alley', name: 'イチイの並木道（話の中）', g, solids, things, W, D, lamp, moon, glow,
+    walls: [{ obj: hl, n: [-1, 0] }, { obj: hr, n: [1, 0] }, { obj: house, n: [0, -1] }],
     start: [3, 1.7],
     cam: { cx: 3, cz: 8.5, fx: 0.15, fz: 0.7, lfx: 0.6, lfz: 0.8 },
     mood: { bg: '#0d1220', fog: [28, 46], hemi: ['#8a9ac8', '#1a1a24', 1.0], sun: 0, moon: 1.8 },

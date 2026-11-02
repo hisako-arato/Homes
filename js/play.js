@@ -61,6 +61,7 @@ export async function initWorld(onProgress) {
 
 // 場面（エリア）を切り替える：見える物・歩ける場所・明かり・カメラが入れ替わる
 export function setArea(id) {
+  exitLook();
   const a = world.areas[id];
   for (const o of Object.values(world.areas)) o.g.visible = o === a;
   world.room = a;
@@ -117,6 +118,7 @@ export function choose(options) {
 }
 
 export function place(id, x, z, face) {
+  if (id === 'shizuku') exitLook();
   const a = world.actors[id];
   a.x = x; a.z = z; a.path = null; a.y = 0;
   a.g.position.set(x, 0, z);
@@ -154,21 +156,64 @@ const ray = new THREE.Raycaster();
 const ndc = new THREE.Vector2();
 const keys = new Set();
 const stick = { on: false, sx: 0, sy: 0, dx: 0, dy: 0, moved: false, id: null };
+// 指の操作：1本でなぞる＝歩く（見回し中は、見る向きを変える）、タップ＝調べる
+// 2本指：ひねる＝カメラを回す、広げる・縮める＝寄る・引く（見回し中は、寄る・引く）
+const touches = new Map();
+let gesture = null;
 function setupInput() {
   const view = $('view');
   addEventListener('keydown', e => {
-    keys.add(e.key.toLowerCase());
-    if ((e.key === ' ' || e.key === 'e' || e.key === 'Enter') && !world.locked && world.mode === 'follow') { e.preventDefault(); examineNearest(); }
+    const k = e.key.toLowerCase();
+    keys.add(k);
+    if ((e.key === ' ' || k === 'e' || e.key === 'Enter') && !world.locked && world.mode === 'follow') { e.preventDefault(); examineNearest(); }
+    if (k === 'q') rotateView(-1);
+    if (k === 'r') rotateView(1);
+    if (k === 'v') toggleLook();
+    if (k === 'escape' && world.mode === 'look') exitLook();
   });
   addEventListener('keyup', e => keys.delete(e.key.toLowerCase()));
+  view.addEventListener('wheel', e => { e.preventDefault(); zoomBy(e.deltaY < 0 ? 1.12 : 1 / 1.12); }, { passive: false });
   view.addEventListener('pointerdown', e => {
-    if (stick.on) return;
-    Object.assign(stick, { on: true, sx: e.clientX, sy: e.clientY, dx: 0, dy: 0, moved: false, id: e.pointerId });
+    touches.set(e.pointerId, { x: e.clientX, y: e.clientY });
     try { view.setPointerCapture(e.pointerId); } catch (_) { /* noop */ }
+    if (touches.size === 2) {
+      // 2本目の指：歩くのをやめて、回す・寄るの操作にする
+      stick.on = false; stick.moved = true; $('stick').classList.remove('on');
+      const [a, b] = [...touches.values()];
+      gesture = { d: Math.hypot(b.x - a.x, b.y - a.y), ang: Math.atan2(b.y - a.y, b.x - a.x), yaw: camState.tyaw, zoom: camState.zoom, fov: lookCam.fov };
+      return;
+    }
+    if (stick.on || touches.size > 2) return;
+    Object.assign(stick, { on: true, sx: e.clientX, sy: e.clientY, lx: e.clientX, ly: e.clientY, dx: 0, dy: 0, moved: false, id: e.pointerId });
   });
   view.addEventListener('pointermove', e => {
+    const tp = touches.get(e.pointerId);
+    if (!tp) return;
+    tp.x = e.clientX; tp.y = e.clientY;
+    if (gesture && touches.size >= 2) {
+      const [a, b] = [...touches.values()];
+      const d = Math.hypot(b.x - a.x, b.y - a.y), ang = Math.atan2(b.y - a.y, b.x - a.x);
+      if (world.mode === 'look') {
+        lookCam.fov = Math.max(25, Math.min(80, gesture.fov * gesture.d / Math.max(20, d)));
+        lookCam.updateProjectionMatrix();
+      } else {
+        camState.zoom = Math.max(0.7, Math.min(2.4, gesture.zoom * d / Math.max(20, gesture.d)));
+        let da = ang - gesture.ang;
+        da = ((da + Math.PI) % (Math.PI * 2) + Math.PI * 2) % (Math.PI * 2) - Math.PI;
+        camState.tyaw = gesture.yaw - da;
+      }
+      return;
+    }
     if (!stick.on || e.pointerId !== stick.id) return;
     stick.dx = e.clientX - stick.sx; stick.dy = e.clientY - stick.sy;
+    if (world.mode === 'look') {
+      // 見回し：指の動いた分だけ、見る向きを変える
+      if (Math.hypot(stick.dx, stick.dy) > 8) stick.moved = true;
+      look.yaw -= (e.clientX - stick.lx) * 0.006;
+      look.pitch = Math.max(-1.2, Math.min(1.1, look.pitch - (e.clientY - stick.ly) * 0.005));
+      stick.lx = e.clientX; stick.ly = e.clientY;
+      return;
+    }
     if (Math.hypot(stick.dx, stick.dy) > 12) {
       stick.moved = true;
       const ring = $('stick');
@@ -179,6 +224,8 @@ function setupInput() {
     }
   });
   const end = e => {
+    touches.delete(e.pointerId);
+    if (touches.size < 2) gesture = null;
     if (!stick.on || e.pointerId !== stick.id) return;
     stick.on = false;
     $('stick').classList.remove('on');
@@ -186,6 +233,86 @@ function setupInput() {
   };
   view.addEventListener('pointerup', end);
   view.addEventListener('pointercancel', end);
+  // カメラのボタン
+  $('rotL').onclick = () => rotateView(-1);
+  $('rotR').onclick = () => rotateView(1);
+  $('lookBtn').onclick = () => toggleLook();
+  $('lookExit').onclick = () => exitLook();
+  // 見回し中は、名札そのものもタップできる
+  $('labels').addEventListener('click', e => {
+    const el = e.target.closest('.label');
+    if (world.mode === 'look' && el && el.dataset.id) lookPick(el.dataset.id);
+  });
+}
+
+// ---- 見下ろしのカメラ：回す・寄る ----
+export const camState = { yaw: 0, tyaw: 0, zoom: 1 };
+const BASE = CAM_DIR.clone();
+export function rotateView(dir) { if (world.mode === 'follow') camState.tyaw = Math.round(camState.tyaw / (Math.PI / 2)) * (Math.PI / 2) + dir * Math.PI / 2; }
+function zoomBy(k) {
+  if (world.mode === 'look') { lookCam.fov = Math.max(25, Math.min(80, lookCam.fov / k)); lookCam.updateProjectionMatrix(); }
+  else camState.zoom = Math.max(0.7, Math.min(2.4, camState.zoom * k));
+}
+// 目に見えている物か（消した壁などは調べない）
+const shown = o => { for (let p = o; p; p = p.parent) if (p.visible === false && !(p.material && p.material.visible === false && p === o)) return false; return true; };
+
+// ---- 見回し：雫の目の高さから、ぐるりと見る（歩かない）。見えている物をタップすると、その場で調べる ----
+export const lookCam = new THREE.PerspectiveCamera(70, 1, 0.05, 120);
+const look = { yaw: 0, pitch: 0 };
+const LOOK_REACH = 3.4;   // 見回しで調べられる距離
+export function enterLook() {
+  if (world.locked || world.mode !== 'follow') return;
+  const sh = world.actors.shizuku;
+  world.mode = 'look';
+  look.yaw = sh.g.rotation.y; look.pitch = -0.12;
+  lookCam.fov = innerWidth / innerHeight < 0.8 ? 72 : 60; lookCam.updateProjectionMatrix();
+  sh.g.visible = false;
+  for (const w of world.room.walls || []) w.obj.visible = true;
+  closePicker();
+  document.body.classList.add('looking');
+  toast('なぞって見回す　／　2本指で寄る<br><small>見えている物をタップすると、その場で調べる</small>', 3200);
+}
+export function exitLook() {
+  if (world.mode !== 'look') return;
+  world.mode = 'follow';
+  world.actors.shizuku.g.visible = true;
+  document.body.classList.remove('looking');
+}
+const toggleLook = () => (world.mode === 'look' ? exitLook() : enterLook());
+// 見回し中の名札をタップしたとき、またはタップした所の近くに名札があるとき
+function lookPick(id) {
+  const t = world.room.things[id];
+  if (!t || world.locked) return;
+  const sh = world.actors.shizuku, p = t.hit.getWorldPosition(new THREE.Vector3());
+  if (Math.hypot(p.x - sh.x, p.z - sh.z) > LOOK_REACH) { toast('遠くて、よく見えない。近くまで歩こう'); return; }
+  world.onThing && world.onThing(id);
+}
+function lookTap(cx, cy) {
+  if (world.locked) return;
+  // 近くに名札があれば、それを調べる（細い物でも押しやすいように）
+  let best = null, bd = 50;
+  for (const [key, el] of labels) {
+    if (el.style.display === 'none' || !key.startsWith(world.room.id + ':')) continue;
+    const r = el.getBoundingClientRect();
+    const d = Math.hypot(r.x + r.width / 2 - cx, r.y + r.height / 2 - cy);
+    if (d < bd) { bd = d; best = key.slice(world.room.id.length + 1); }
+  }
+  if (best) return lookPick(best);
+  ndc.set(cx / innerWidth * 2 - 1, -(cy / innerHeight) * 2 + 1);
+  ray.setFromCamera(ndc, lookCam);
+  const objs = [world.room.g, ...Object.values(world.actors).filter(a => a.visible && a.id !== 'shizuku').map(a => a.g)];
+  const sh = world.actors.shizuku;
+  for (const h of ray.intersectObjects(objs, true)) {
+    const o = h.object;
+    if (!shown(o)) continue;
+    const id = o.userData.thing, act = o.userData.actor;
+    if (!id && !act) { if (o.material && o.material.visible !== false && h.distance < 1.2) return; continue; }   // すぐ目の前の物にさえぎられた
+    const d = Math.hypot(h.point.x - sh.x, h.point.z - sh.z);
+    if (d > LOOK_REACH) { toast('遠くて、よく見えない。近くまで歩こう'); return; }
+    if (act) { faceActor('shizuku', act); world.onActor && world.onActor(act); return; }
+    const t = world.room.things[id];
+    if (t && (t.hidden || world.sparkle(id) || world.examined.has(id))) { world.onThing && world.onThing(id); return; }
+  }
 }
 
 // タップ：指の近くに調べられる物や人が2つ以上あれば、一覧を出して選ばせる（狙った物を確実に触れるように）
@@ -193,6 +320,7 @@ const PICK_PX = 46;
 function tap(cx, cy) {
   closePicker();
   if (world.mode === 'window') { world.onWindowTap && world.onWindowTap(); return; }
+  if (world.mode === 'look') return lookTap(cx, cy);
   if (world.locked) return;
   ndc.set(cx / innerWidth * 2 - 1, -(cy / innerHeight) * 2 + 1);
   ray.setFromCamera(ndc, camera);
@@ -203,6 +331,7 @@ function tap(cx, cy) {
   let floorAt = null;
   for (const h of hits) {
     const o = h.object;
+    if (!shown(o)) continue;   // 回したカメラの手前で消している壁など
     if (o.userData.actor && !cand.has('a:' + o.userData.actor)) cand.set('a:' + o.userData.actor, 0);
     else if (o.userData.thing && !cand.has('t:' + o.userData.thing)) cand.set('t:' + o.userData.thing, 0);
     else if (!floorAt && o.isMesh && o.material && o.material.visible !== false) floorAt = [h.point.x, h.point.z];
@@ -337,7 +466,7 @@ function tick(now) {
   if (world.room.update) world.room.update(dt, sh);
   updateCamera(dt);
   updateLabels();
-  renderer.render(scene, world.mode === 'window' ? winCam : camera);
+  renderer.render(scene, activeCam());
   requestAnimationFrame(tick);
 }
 const turnTo = (a, b, k) => {
@@ -371,16 +500,25 @@ function followPath(a, dt) {
   } else { a.x += dx / d * v; a.z += dz / d * v; }
 }
 
+const activeCam = () => (world.mode === 'window' ? winCam : world.mode === 'look' ? lookCam : camera);
+const _dir = new THREE.Vector3();
 function updateCamera(dt) {
   const sh = world.actors.shizuku;
   const portrait = innerWidth / innerHeight < 0.8;
-  let tx, tz, zoom = 1;
-  if (focus.on) { tx = focus.x; tz = focus.z; zoom = focus.zoom; }
+  // 回す：目標の向きへ、なめらかに
+  let dy = camState.tyaw - camState.yaw;
+  camState.yaw += dy * Math.min(1, dt * 8);
+  const cy = Math.cos(camState.yaw), syw = Math.sin(camState.yaw);
+  CAM_DIR.set(BASE.x * cy + BASE.z * syw, BASE.y, -BASE.x * syw + BASE.z * cy);
+  let tx, tz, zoom = camState.zoom;
+  if (focus.on) { tx = focus.x; tz = focus.z; zoom *= focus.zoom; }
   else {
-    // 縦長の画面では部屋の幅がほぼ収まるので、雫に少しだけ寄せる
+    // 縦長の画面では部屋の幅がほぼ収まるので、雫に少しだけ寄せる（寄るほど、雫を追う）
     const c = world.room.cam;
-    tx = c.cx + (sh.x - c.cx) * (portrait ? c.fx : c.lfx);
-    tz = c.cz + (sh.z - c.cz) * (portrait ? c.fz : c.lfz);
+    const near = Math.min(1, Math.max(0, camState.zoom - 1) * 1.2) || (camState.yaw % (Math.PI * 2) !== 0 ? 0.5 : 0);
+    const fx = (portrait ? c.fx : c.lfx), fz = (portrait ? c.fz : c.lfz);
+    tx = c.cx + (sh.x - c.cx) * (fx + (1 - fx) * near);
+    tz = c.cz + (sh.z - c.cz) * (fz + (1 - fz) * near);
     if (c.zmin != null) tz = Math.max(c.zmin, Math.min(c.zmax, tz));   // 場所の端の、何も無い所を映さない
   }
   camTarget.x += (tx - camTarget.x) * Math.min(1, dt * 3);
@@ -388,15 +526,27 @@ function updateCamera(dt) {
   camera.position.copy(camTarget).addScaledVector(CAM_DIR, 30);
   camera.lookAt(camTarget);
   const z0 = camera.zoom;
-  camera.zoom = z0 + (zoom - z0) * Math.min(1, dt * 3);
+  camera.zoom = z0 + (zoom - z0) * Math.min(1, dt * 4);
   if (Math.abs(camera.zoom - z0) > 1e-4) camera.updateProjectionMatrix();
+  // カメラの側に来た壁は消す（見回し中は、すべて見せる）
+  if (world.mode !== 'look') {
+    _dir.set(CAM_DIR.x, 0, CAM_DIR.z).normalize();
+    for (const w of world.room.walls || []) w.obj.visible = w.n[0] * _dir.x + w.n[1] * _dir.z < 0.3;
+  }
+  // 見回しのカメラ：雫の目の高さ
+  if (world.mode === 'look') {
+    lookCam.position.set(sh.x, 1.42, sh.z);
+    const cp = Math.cos(look.pitch);
+    lookCam.lookAt(sh.x + Math.sin(look.yaw) * cp, 1.42 + Math.sin(look.pitch), sh.z + Math.cos(look.yaw) * cp);
+    lookCam.aspect = innerWidth / innerHeight; lookCam.updateProjectionMatrix();
+  }
   winCam.aspect = innerWidth / innerHeight;
   winCam.updateProjectionMatrix();
 }
 
 // 今の画面の小さな絵（セーブのスロットに付ける）
 export function snapshot(w = 120, h = 200) {
-  renderer.render(scene, world.mode === 'window' ? winCam : camera);
+  renderer.render(scene, activeCam());
   const src = renderer.domElement, c = document.createElement('canvas');
   c.width = w; c.height = h;
   const g = c.getContext('2d');
@@ -410,6 +560,7 @@ export function goTo(id) { if (!world.locked) goThing(id); }
 
 // 窓から外を見る（窓の前に立ち、通りを見下ろす）
 export function lookOut(x) {
+  exitLook();
   world.mode = 'window';
   // 窓ガラスのすぐ外から、通りを見下ろす（窓枠で視界をふさがないように）
   winCam.position.set(x, 1.5, -0.3);
@@ -427,6 +578,7 @@ const v3 = new THREE.Vector3();
 function updateLabels() {
   const box = $('labels');
   const sh = world.actors.shizuku;
+  if (world.mode === 'look') return lookLabels();
   const show = world.mode === 'follow' && !world.locked;
   let nearest = null, nd = 1.3;
   for (const t of Object.values(world.room.things)) {
@@ -451,6 +603,31 @@ function updateLabels() {
     el.style.top = ((1 - v3.y) / 2 * innerHeight) + 'px';
     el.classList.toggle('dot', !named);
     el.classList.toggle('done', done);
+  }
+}
+
+// 見回し中の名札：手の届く所（3.4m）にあって、こちらを向いている物に名前を出す
+function lookLabels() {
+  const sh = world.actors.shizuku;
+  for (const [key, el] of labels) if (!key.startsWith(world.room.id + ':')) el.style.display = 'none';
+  for (const t of Object.values(world.room.things)) {
+    const key = world.room.id + ':' + t.id;
+    let el = labels.get(key);
+    if (!el) { el = document.createElement('div'); el.className = 'label'; $('labels').append(el); labels.set(key, el); }
+    el.dataset.id = t.id;
+    const done = world.examined.has(t.id), useful = world.sparkle(t.id) && !t.hidden;
+    const p = t.hit.getWorldPosition(v3);
+    const d = Math.hypot(p.x - sh.x, p.z - sh.z);
+    if (world.locked || d > LOOK_REACH || (!useful && !done)) { el.style.display = 'none'; continue; }
+    v3.copy(t.label).project(lookCam);
+    if (v3.z > 1 || Math.abs(v3.x) > 1.1 || Math.abs(v3.y) > 1.1) { el.style.display = 'none'; continue; }
+    el.style.display = '';
+    const txt = `${done ? '✓' : '✦'} ${t.name}`;
+    if (el.textContent !== txt) el.textContent = txt;
+    el.classList.remove('dot');
+    el.classList.toggle('done', done);
+    el.style.left = ((v3.x + 1) / 2 * innerWidth) + 'px';
+    el.style.top = ((1 - v3.y) / 2 * innerHeight) + 'px';
   }
 }
 
@@ -506,6 +683,7 @@ export function toast(text, ms = 2600) {
 }
 export const wait = ms => new Promise(r => setTimeout(r, ms));
 export function fade(on) {
+  exitLook();
   $('fade').classList.toggle('on', on);
   return wait(450);
 }

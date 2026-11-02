@@ -5,7 +5,7 @@ import { runGame } from './story.js';
 import { S, load, hasSave, reset } from './save.js';
 import { VERSION } from './version.js';
 import { startFire, page } from './audio.js';
-import { openMenu, openSettings, openHelp, confirmBox, closeModal } from './menu.js';
+import { openMenu, openSettings, openHelp, confirmBox, closeModal, updateOfflineTag } from './menu.js';
 
 const $ = id => document.getElementById(id);
 const standalone = () => matchMedia('(display-mode: standalone)').matches || matchMedia('(display-mode: fullscreen)').matches || navigator.standalone;
@@ -34,6 +34,7 @@ const ready = initWorld(f => { $('loadbar').style.width = Math.round(f * 100) + 
   const img = document.createElement('img'); img.src = 'assets/faces/shizuku2.webp'; img.dataset.id = 'shizuku'; $('faces').append(img);
   $('loading').classList.add('hidden');
   $('titleMenu').classList.remove('hidden');
+  updateOfflineTag();
   // メニューの「ロード」から読み込み直したときは、そのまま始める
   let auto = false;
   try { auto = sessionStorage.getItem('homes-autostart') === '1'; sessionStorage.removeItem('homes-autostart'); } catch (_) { /* noop */ }

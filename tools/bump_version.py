@@ -14,5 +14,9 @@ t = re.sub(r"VERSION_DATE = '[^']*'", f"VERSION_DATE = '{date}'", t)
 js.write_text(t)
 (root / 'version.json').write_text(json.dumps({'version': ver, 'date': date}) + '\n')
 sw = root / 'sw.js'
-sw.write_text(re.sub(r"const CACHE = 'homes-[^']*'", f"const CACHE = 'homes-{ver}'", sw.read_text()))
+sw.write_text(re.sub(r"const CACHE = 'homes-[0-9][^']*'", f"const CACHE = 'homes-{ver}'", sw.read_text()))
 print(f'version {ver} ({date})')
+
+# 公開するファイルの一覧も作り直す（オフライン用のダウンロードが使う）
+import subprocess
+subprocess.run(['python3', str(root / 'tools/make_manifest.py')], check=True)

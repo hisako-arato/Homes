@@ -50,8 +50,9 @@ export function buildStreet() {
     [10, '#2a4a4a', 'PICTURE GALLERY', '画廊', '絵の展示室。ベルギーの新しい画家の絵、だって'],
     [4, '#3a2a1e', 'DISTRICT MESSENGER OFFICE', '使い走りの事務所', null],
   ];
+  const west = new THREE.Group(), east = new THREE.Group(); g.add(west, east);
   for (const [z, col, en, , ] of SHOPS) {
-    const f = new THREE.Group(); f.position.set(0, 0, z); g.add(f);
+    const f = new THREE.Group(); f.position.set(0, 0, z); west.add(f);
     box(f, 1.0, 5.5, 3.9, mat('#cfc6b4'), 0.5, 0, 0);   // 建物の壁
     box(f, 0.12, 0.25, 3.9, mat('#9a907e'), 1.0, 3.1, 0);
     box(f, 0.08, 2.6, 3.6, mat(col), 1.02, 0, 0);   // 店の正面
@@ -79,7 +80,7 @@ export function buildStreet() {
   }
   thing('lamp', 'ガス灯', [3.7, 0, 22, 0.3, 3.4, 0.3], [3.2, 21.6], [3.7, 3.6, 22], { line: 'ガス灯。夜になると、点灯夫がはしごで火をつけに来るんだっけ' });
   // 向かい側（東）の建物
-  for (let z = 2; z < D; z += 6) box(g, 1.2, 6, 5.6, mat(['#d8cfbc', '#c8bca6', '#e0d6c4'][Math.floor(rand() * 3)]), 12.6, 0, z + 1);
+  for (let z = 2; z < D; z += 6) box(east, 1.2, 6, 5.6, mat(['#d8cfbc', '#c8bca6', '#e0d6c4'][Math.floor(rand() * 3)]), 12.6, 0, z + 1);
 
   // ---- 通りの人びと（店の前に立つ人と、歩く人） ----
   const people = [];
@@ -121,6 +122,7 @@ export function buildStreet() {
 
   const area = {
     id: 'street', name: 'ロンドン　リージェント街', g, solids, things, W, D, cabs, sus,
+    walls: [{ obj: west, n: [-1, 0] }, { obj: east, n: [1, 0] }],
     start: [2.6, 41.5],
     cam: { cx: 4.4, cz: 30, fx: 0.25, fz: 1.0, lfx: 0.5, lfz: 1.0, zmin: 4, zmax: 33 },
     mood: { bg: '#a8a49a', fogColor: '#a8a49a', fog: [26, 46], hemi: ['#f0ece2', '#6a6458', 1.25], sun: 0.9 },

@@ -35,31 +35,34 @@ export function buildRoom() {
   // 奥の壁（窓が2つ：x 2.6 と 5.4、幅1.2、高さ 0.7〜2.5）
   const winX = [2.6, 5.4];
   const backPieces = [[0, 2.0], [3.2, 4.8], [6.0, 8]];
-  for (const [a, b] of backPieces) box(g, b - a, WALL, 0.2, wallM, (a + b) / 2, 0, -0.1);
+  // 奥の壁はまとめておく（カメラを回して奥から見るときは、消して中を見せる）
+  const back = new THREE.Group(); g.add(back);
+  for (const [a, b] of backPieces) box(back, b - a, WALL, 0.2, wallM, (a + b) / 2, 0, -0.1);
   for (const x of winX) {
-    box(g, 1.2, 0.7, 0.2, wallM, x, 0, -0.1);
-    box(g, 1.2, WALL - 2.5, 0.2, wallM, x, 2.5, -0.1);
+    box(back, 1.2, 0.7, 0.2, wallM, x, 0, -0.1);
+    box(back, 1.2, WALL - 2.5, 0.2, wallM, x, 2.5, -0.1);
     // 窓枠・ガラス・カーテン
-    box(g, 1.3, 0.08, 0.3, M.white, x, 0.66, -0.05);
-    for (const dx of [-0.6, 0, 0.6]) box(g, 0.06, 1.8, 0.08, M.white, x + dx, 0.7, -0.05);
-    box(g, 1.2, 0.06, 0.08, M.white, x, 1.6, -0.05);
+    box(back, 1.3, 0.08, 0.3, M.white, x, 0.66, -0.05);
+    for (const dx of [-0.6, 0, 0.6]) box(back, 0.06, 1.8, 0.08, M.white, x + dx, 0.7, -0.05);
+    box(back, 1.2, 0.06, 0.08, M.white, x, 1.6, -0.05);
     const glass = new THREE.Mesh(new THREE.PlaneGeometry(1.2, 1.8), M.glass);
-    glass.position.set(x, 1.6, -0.06); g.add(glass);
-    for (const dx of [-0.78, 0.78]) box(g, 0.28, 2.3, 0.12, M.curtain, x + dx, 0.3, 0.06);
-    box(g, 1.9, 0.08, 0.08, M.brass, x, 2.62, 0.08);
+    glass.position.set(x, 1.6, -0.06); back.add(glass);
+    for (const dx of [-0.78, 0.78]) box(back, 0.28, 2.3, 0.12, M.curtain, x + dx, 0.3, 0.06);
+    box(back, 1.9, 0.08, 0.08, M.brass, x, 2.62, 0.08);
   }
   solid(0, W, -0.3, 0.12);
-  box(g, W, 0.25, 0.06, wains, W / 2, 0, 0.02);
+  box(back, W, 0.25, 0.06, wains, W / 2, 0, 0.02);
   // 左の壁（暖炉と、ホームズの寝室の扉）
-  box(g, 0.2, WALL, 0.5, wallM2, -0.1, 0, 0.25);
-  box(g, 0.2, 0.7, 1.0, wallM2, -0.1, 2.3, 1.0);
-  box(g, 0.2, WALL, D - 1.5, wallM2, -0.1, 0, 1.5 + (D - 1.5) / 2);
+  const left = new THREE.Group(); g.add(left);
+  box(left, 0.2, WALL, 0.5, wallM2, -0.1, 0, 0.25);
+  box(left, 0.2, 0.7, 1.0, wallM2, -0.1, 2.3, 1.0);
+  box(left, 0.2, WALL, D - 1.5, wallM2, -0.1, 0, 1.5 + (D - 1.5) / 2);
   solid(-0.3, 0.12, 0, D);
-  box(g, 0.06, 0.25, D, wains, 0.02, 0, D / 2);
+  box(left, 0.06, 0.25, D, wains, 0.02, 0, D / 2);
   // 寝室の扉（閉じている）
   const hDoor = new THREE.Group();
   hDoor.position.set(0.02, 0, 0.5);
-  g.add(hDoor);
+  left.add(hDoor);
   box(hDoor, 0.06, 2.25, 0.98, M.wood, 0, 0, 0.5);
   ball(hDoor, 0.04, M.brass, 0.06, 1.05, 0.85, 0);
   thing('hdoor', 'ホームズの寝室', [0.2, 0, 1.0, 0.4, 2.2, 1.0], [0.75, 1.0]);
@@ -244,6 +247,8 @@ export function buildRoom() {
   buildStreet(g);
   return {
     id: 'room', name: 'ベーカー街221B　居間', g, solids, things, fireLight, gas, W, D,
+    // カメラの側に来たら消す壁（n：壁の外向き）
+    walls: [{ obj: back, n: [0, -1] }, { obj: left, n: [-1, 0] }],
     // カメラの中心と、雫に寄せる割合（縦長の画面 fx・fz／横長 lfx・lfz）
     cam: { cx: 4, cz: 3.4, fx: 0.15, fz: 0.35, lfx: 0.6, lfz: 0.6 },
     mood: { bg: '#1b1a1e', fog: [31, 41], hemi: ['#f4ecde', '#3a2c28', 1.0], sun: 1.5, moon: 0 },
