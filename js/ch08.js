@@ -3,16 +3,16 @@
 // → 荒野へ。岩のすき間に、獣のような顔 → 月を背に、岩山の上の人影
 import { THREE } from './engine.js';
 import { nightEnv } from './night.js';
+import { courtship, apology } from './scenes4.js';
 import { tick, step } from './audio.js';
 import { writeReport } from './report.js';
 import { A, L, cast, enter, investigate, quiz, grade, registerSteps, runSteps, endCard, titleCard, placeCard, world, place, walkTo, walkStraight, faceTo, faceActor, setArea, fade, addClue, addPerson, mood, hide, ensure, wait, watsonTalk, found } from './scene.js';
 
-registerSteps('第8章', [['c8', '窓辺の見張り'], ['c8b', 'バリモア夫人の打ち明け話'], ['c8c', '夜の荒野'], ['c8e', '岩山の人影'], ['c8f', '推理'], ['c8g', '第二の報告']]);
+registerSteps('第8章', [['c8', '荒野の逢い引き'], ['c8a', 'ステイプルトンのおわび'], ['c8w', '窓辺の見張り'], ['c8b', 'バリモア夫人の打ち明け話'], ['c8c', '夜の荒野'], ['c8e', '岩山の人影'], ['c8f', '推理'], ['c8g', '第二の報告']]);
 const HALL_NIGHT = { bg: '#100c10', fog: [32, 50], hemi: ['#d4c6d4', '#4a3e44', 1.4], sun: 0 };   // 夜の館（ろうそくの明かりで、足元が見える程度）
 let candle = null;
 
 async function watch() {
-  await titleCard('第8章', '荒野の灯');
   setArea('hall'); mood(HALL_NIGHT);
   world.areas.hall.fire.intensity = 1.6; world.areas.hall.lamp.intensity = 0.8;
   if (!candle) { candle = new THREE.PointLight('#ffcf7a', 3, 6, 1.4); world.areas.hall.g.add(candle); }
@@ -142,7 +142,7 @@ async function report2() {
 }
 
 export async function runChapter8() {
-  await runSteps([['c8', watch], ['c8b', confess], ['c8c', moorChase], ['c8e', torMan], ['c8f', deduction], ['c8g', async () => { world.areas.moor.glowOn = false; await report2(); }]]);
+  await runSteps([['c8', courtship], ['c8a', apology], ['c8w', watch], ['c8b', confess], ['c8c', moorChase], ['c8e', torMan], ['c8f', deduction], ['c8g', async () => { world.areas.moor.glowOn = false; await report2(); }]]);
   world.areas.moor.glowOn = false;
   await endCard('第8章', '荒野の灯', 'つづく ―― 次は、焼け残った手紙', 'c9');
 }
