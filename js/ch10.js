@@ -3,6 +3,7 @@
 // → 黒岩山の石の小屋を調べる → 推理 → 「いい夕べだね、ワトソン君」
 import { A, L, cast, enter, investigate, quiz, grade, registerSteps, runSteps, endCard, titleCard, world, place, walkTo, faceTo, faceActor, fade, addClue, addPerson, hide, ensure, watsonTalk, think, wait } from './scene.js';
 import { telescope } from './overlays.js';
+import { holmesComments, reportTotals } from './report.js';
 
 registerSteps('第10章', [['c10', 'ローラ・ライオンズ'], ['c10b', 'フランクランドの望遠鏡'], ['c10c', '石の小屋'], ['c10d', '推理'], ['c10e', '岩山の男']]);
 
@@ -88,6 +89,18 @@ async function deduction() {
   await quiz('c10', null, '小屋の主が帰ってくる前に、推理をまとめよう！');
 }
 
+// ホームズが、報告の一つひとつに感想を言う（書いた中身で変わる）
+async function feedback() {
+  const lines = holmesComments();
+  const { ok, n } = reportTotals();
+  if (!n) return;
+  await L([['watson', '私の報告を……全部？'], ['holmes', '全部だよ。ほら、ここに。……ずいぶん、くり返し読んだ'], ...lines.map(t => ['holmes', t])]);
+  const r = ok / n;
+  if (r >= 0.85) await L([['holmes', '事実だけを、しかも大事な所をもらさずに。……見事な報告だったよ、ワトソン君'], ['watson', 'ホームズ……'], ['T', '（わたしも、手伝ったんだよ……！）', 'happy']]);
+  else if (r >= 0.6) await L([['holmes', 'ところどころ、考えやうわさが混じっていたね。だが、役に立った'], ['T', '（もっと、事実だけにすればよかった……）']]);
+  else await L([['holmes', '考えとうわさが、少し多かったね。「事実だけを」と頼んだはずだよ'], ['watson', '……面目ない'], ['T', '（ごめん、ワトソン先生……）', 'sad']]);
+}
+
 async function holmesReveal() {
   world.locked = true;
   await ensure('moor', 'dusk', [['watson', 12.2, 41.4, Math.PI, false, 'watson']], [11.0, 41.6]);
@@ -101,6 +114,7 @@ async function holmesReveal() {
     ['watson', 'ホームズ！ 君だったのか！'],
     ['T', 'ホームズ……！ ずっと、この荒野にいたんだ……！', 'happy'],
     ['holmes', 'カートライトが、食べ物を運んでくれていた。君の報告書も、ロンドンからここへ回してもらって読んでいたよ'],
+    feedback,
     ['watson', 'では、ロンドンの事件というのは……'],
     ['holmes', '僕がいると知られたら、相手は用心する。陰から見張る方がよかったのさ'],
     ['holmes', 'クーム・トレーシーへ行ったのも知っている。ローラ・ライオンズに会ったね。……あの女は、ステイプルトンと親しい'],

@@ -12,6 +12,8 @@ import { chime, bell, door, fanfare, miss } from './audio.js';
 import { runChapter2 } from './chapter2.js';
 import { runChapter3 } from './chapter3.js';
 import './data2.js';
+import './suspects.js';
+import './report.js';
 import { runChapter4 } from './ch04.js';
 import { runChapter5 } from './ch05.js';
 import { runChapter6 } from './ch06.js';

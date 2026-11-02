@@ -2,9 +2,10 @@
 // 夜の見張り：窓辺のバリモアを問いつめ、荒野にこたえる灯 → 夫人の打ち明け話（脱獄囚は弟）
 // → 荒野へ。岩のすき間に、獣のような顔 → 月を背に、岩山の上の人影
 import { THREE } from './engine.js';
+import { writeReport } from './report.js';
 import { A, L, cast, enter, investigate, quiz, grade, registerSteps, runSteps, endCard, titleCard, placeCard, world, place, walkTo, walkStraight, faceTo, faceActor, setArea, fade, addClue, addPerson, mood, hide, ensure, wait, watsonTalk, found } from './scene.js';
 
-registerSteps('第8章', [['c8', '窓辺の見張り'], ['c8b', 'バリモア夫人の打ち明け話'], ['c8c', '夜の荒野'], ['c8e', '岩山の人影'], ['c8f', '推理']]);
+registerSteps('第8章', [['c8', '窓辺の見張り'], ['c8b', 'バリモア夫人の打ち明け話'], ['c8c', '夜の荒野'], ['c8e', '岩山の人影'], ['c8f', '推理'], ['c8g', '第二の報告']]);
 const HALL_NIGHT = { bg: '#100c10', fog: [32, 50], hemi: ['#d4c6d4', '#4a3e44', 1.4], sun: 0 };   // 夜の館（ろうそくの明かりで、足元が見える程度）
 let candle = null;
 
@@ -110,8 +111,21 @@ async function deduction() {
   await grade('c8');
 }
 
+// 翌朝：第二の報告を一緒に書く
+async function report2() {
+  world.locked = true;
+  await fade(true);
+  setArea('hall'); mood(world.areas.hall.mood);
+  world.areas.hall.fire.intensity = 4; world.areas.hall.lamp.intensity = 2.5;
+  cast([['watson', 4.8, 7.45, Math.PI, true, null]]);
+  place('shizuku', 4.0, 8.6, Math.PI / 2);
+  await placeCard('翌朝', 'バスカヴィル館');
+  await fade(false);
+  await writeReport('r2', L);
+}
+
 export async function runChapter8() {
-  await runSteps([['c8', watch], ['c8b', confess], ['c8c', moorChase], ['c8e', torMan], ['c8f', deduction]]);
+  await runSteps([['c8', watch], ['c8b', confess], ['c8c', moorChase], ['c8e', torMan], ['c8f', deduction], ['c8g', async () => { world.areas.moor.glowOn = false; await report2(); }]]);
   world.areas.moor.glowOn = false;
   await endCard('第8章', '荒野の灯', 'つづく ―― 次は、焼け残った手紙', 'c9');
 }

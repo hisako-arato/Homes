@@ -163,6 +163,8 @@ export const PERSONS = {
   henry: { name: 'ヘンリー・バスカヴィル卿', line: '跡継ぎ。カナダから\nロンドンに着いたばかり' },
   hugo: { name: 'ヒューゴ・バスカヴィル', line: '1742年の伝説の主人。\n魔犬に襲われた' },
 };
+// ほかのファイルが足すノートのページ：[key, 名前, 中身を返す関数, 出す条件, 中身のボタンをつなぐ関数(box, rerender)]
+export const EXTRA_TABS = [];
 // 相関図に出す人：会った人と、話に出てきた人
 export const EXTRA_KNOWN = [];   // [id, 条件] 会っていなくても、話に出てきたら相関図に出す
 function knownPersons() {
@@ -334,9 +336,12 @@ export function openNotebook() {
   box.classList.remove('hidden');
   let tab = 'clue';
   const render = () => {
-    const tabs = [['clue', '手がかり'], ['person', '人物'], ['term', '用語'], ['ded', '推理']];
+    const extra = EXTRA_TABS.filter(t => t[3]());
+    const tabs = [['clue', '手がかり'], ['person', '人物'], ...extra.map(t => [t[0], t[1]]), ['term', '用語'], ['ded', '推理']];
+    const ex = extra.find(t => t[0] === tab);
     let body = '';
-    if (tab === 'clue') {
+    if (ex) body = ex[2]();
+    else if (tab === 'clue') {
       body = S.clues.length ? `<div class="cards">${S.clues.map(id => {
         const c = CLUES[id];
         return `<div class="ccard"><img src="${iconOf(c.icon)}" alt=""><b>${c.name}</b><small>${c.line.replace(/\n/g, '<br>')}</small></div>`;
@@ -357,10 +362,11 @@ export function openNotebook() {
         return `<div><span>${q.q}</span><b>${o[1].replace(/\n/g, '')}</b></div>`;
       }).join('')}</div>` : '<p class="empty">まだ推理していない。</p>';
     }
-    box.innerHTML = `<div class="panel"><div class="tabs">${tabs.map(([k, n]) => `<button data-tab="${k}" class="${k === tab ? 'on' : ''}">${n}</button>`).join('')}</div>
+    box.innerHTML = `<div class="panel"><div class="tabs ${tabs.length > 4 ? 'many' : ''}">${tabs.map(([k, n]) => `<button data-tab="${k}" class="${k === tab ? 'on' : ''}">${n}</button>`).join('')}</div>
       <div class="nbody">${body}</div><button class="close">閉じる</button></div>`;
     box.querySelectorAll('[data-tab]').forEach(b => { b.onclick = () => { tab = b.dataset.tab; render(); }; });
     box.querySelector('.close').onclick = () => box.classList.add('hidden');
+    if (ex && ex[4]) ex[4](box, () => { const t = box.querySelector('.nbody').scrollTop; render(); box.querySelector('.nbody').scrollTop = t; });
   };
   render();
 }

@@ -2,8 +2,10 @@
 // パディントン駅でホームズの言いつけ → 荒野を通って館へ（脱獄囚の知らせ）→ 大広間とヒューゴの肖像画 → 夜のすすり泣き → 翌朝のバリモアの答え
 import { A, L, cast, enter, investigate, quiz, grade, registerSteps, runSteps, endCard, titleCard, placeCard, world, place, walkTo, faceTo, faceActor, setArea, fade, addClue, addPerson, S, save, think, mood, dim, watsonTalk, wait, setFace, toast } from './scene.js';
 import { howl } from './audio.js';
+import { writeReport } from './report.js';
+import { ensure } from './scene.js';
 
-registerSteps('第5章', [['c5', 'パディントン駅'], ['c5b', '荒野へ'], ['c5c', '館の大広間'], ['c5d', '館の夜'], ['c5e', '翌朝']]);
+registerSteps('第5章', [['c5', 'パディントン駅'], ['c5b', '荒野へ'], ['c5c', '館の大広間'], ['c5d', '館の夜'], ['c5e', '翌朝'], ['c5f', 'ホームズへの電報']]);
 const HALL_NIGHT = { bg: '#100c10', fog: [32, 50], hemi: ['#d4c6d4', '#4a3e44', 1.4], sun: 0 };   // 夜の館（ろうそくの明かりで、足元が見える程度）
 
 async function station() {
@@ -55,6 +57,9 @@ async function hallInside() {
   await fade(false);
   await L([
     ['barrymore', 'お帰りなさいませ、ヘンリー卿'],
+    ['T', '背が高くて……四角く刈りそろえた、黒いひげ', 'surprised'],
+    ['T', '御者のクレイトンさんが言ってた、馬車の男と同じ形……！', 'surprised'],
+    () => addClue('samebeard'),
     ['henry', '……暗い館だな。でも、立派だ'],
     ['barrymore', '恐れ入りますが……落ち着かれましたら、私ども夫婦は、おひまをいただきたいのです'],
     ['henry', 'なぜだ？ 何代も、この家に仕えてくれたのだろう'],
@@ -92,6 +97,8 @@ async function night() {
     ['convict', '脱獄囚のこと', ['人殺しが、この荒野のどこかに……。ヘンリー卿を、夜は一人で出さないようにしよう']],
     ['barry', 'バリモア夫妻のこと', ['長く仕えた家を、急に辞めたいとは。……悲しみのせいか、それとも', 'あの黒いひげ、ホームズも気にしていたね']],
     ['hugo', 'ヒューゴの肖像画', ['伝説の、あの男か。……絵だとわかっていても、目を合わせたくないね']],
+    ['beard', 'バリモアのひげ', ['……君も気づいたかね。四角く刈った黒ひげ。御者の話と、そっくりだ', 'ただ、黒ひげの男など、イギリスじゅうに何万といる。決めつけはいけないよ']],
+    ['mort', 'モーティマー先生のこと', ['遺言で1000ポンド、か。……医者仲間を疑うのは気が引けるが', 'ホームズは「みんなをよく見ておけ」と言っていた。あの人も、その「みんな」に入るのだろうね']],
   ], 'やれやれ、やっと二人きりだ。……何か気になることは？');
   await L([
     ['N', '……夜更け。どこかで、すすり泣く声がする。'],
@@ -140,8 +147,17 @@ async function morning() {
   await grade('c5');
 }
 
+async function telegramToHolmes() {
+  world.locked = true;
+  await ensure('hall', world.areas.hall.mood, [['watson', 4.8, 7.45, Math.PI, true, null]], [4.0, 8.6], Math.PI / 2);
+  cast([['watson', 4.8, 7.45, Math.PI, true, null]]);
+  place('shizuku', 4.0, 8.6, Math.PI / 2);
+  faceActor('shizuku', 'watson');
+  await writeReport('r0', L);
+}
+
 export async function runChapter5() {
-  await runSteps([['c5', station], ['c5b', moorArrival], ['c5c', hallInside], ['c5d', night], ['c5e', morning]]);
+  await runSteps([['c5', station], ['c5b', moorArrival], ['c5c', hallInside], ['c5d', night], ['c5e', morning], ['c5f', telegramToHolmes]]);
   await endCard('第5章', 'バスカヴィル館', 'つづく ―― 次は、メリピット荘', 'c6');
 }
 export { wait, faceTo, faceActor, howl, S, save, setFace, toast, think };

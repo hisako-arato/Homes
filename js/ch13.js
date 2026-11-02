@@ -3,6 +3,8 @@
 // → ホームズはオペラへ。ワトソンと二人きりで、お別れ → 本が閉じる
 import { A, L, cast, quiz, grade, registerSteps, runSteps, titleCard, placeCard, world, place, setArea, fade, mood, NIGHT_ROOM, S, save, think, watsonTalk, wait, setFace, ensure } from './scene.js';
 import { QSETS } from './notebook.js';
+import { firstMarked } from './suspects.js';
+import { STEP_LABEL } from './save.js';
 import { fanfare, chime, page } from './audio.js';
 import { arm } from './tap.js';
 
@@ -34,9 +36,24 @@ async function finalQuiz() {
     ['holmes', 'ロンドンの店で、いちばん強く大きな犬を買い、沼の島の鉱山に隠した。口のまわりには燐を塗った'],
     ['holmes', 'サー・チャールズには、ローラ・ライオンズを使って門の前で待たせ、犬に襲わせた。弱い心臓は、それに耐えられなかった'],
     ['holmes', 'ロンドンでは、つけひげで辻馬車からヘンリー卿を見張った。ベリルは、夫をこわがりながらも、新聞の切り抜きで警告を送った'],
+    ['holmes', 'あの四角い黒ひげは、疑いをバリモアに向けるためでもあった。……ワトソン君も、ずいぶんバリモアを疑っていたね'],
+    ['watson', '……面目ない'],
     ['holmes', '新しい靴は、においが無くて役に立たない。だから返して、古い靴を盗んだのさ'],
   ]);
   await grade('c13');
+  await lookBack();
+}
+
+// 容疑者メモのふり返り：ステイプルトンを「怪しい」にしたのは、いつだったか
+async function lookBack() {
+  const st = firstMarked('stapleton');
+  const lab = st && STEP_LABEL[st];
+  if (lab) await think(`わたし、${lab[0]}の「${lab[1]}」のころから、ステイプルトンが怪しいと思ってた……！`, 'happy');
+  else if (st) await think('わたし、ずっと前から、ステイプルトンが怪しいと思ってた……！', 'happy');
+  else if ((S.sus.barrymore || 0) === 2) await think('わたし、最後までバリモアを疑ってた……。まんまと、だまされちゃった', 'sad');
+  else if (S.susLog.length) await think('ステイプルトン……最後まで、怪しいって印を付けられなかった', 'sad');
+  else return;
+  setFace('shizuku', {});
 }
 
 async function farewell() {

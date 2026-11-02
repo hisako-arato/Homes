@@ -2,8 +2,9 @@
 // バリモアの話：サー・チャールズが亡くなった朝の、L.L. からの手紙／荒野のもう一人の男 → 書斎の暖炉で、燃え残りの文 → モーティマー医師「L.L. はローラ・ライオンズ」
 import { A, L, cast, investigate, quiz, grade, registerSteps, runSteps, endCard, titleCard, placeCard, world, place, walkTo, faceTo, faceActor, setArea, fade, addClue, addPerson, mood, hide, ensure, watsonTalk, door } from './scene.js';
 import { charredLetter } from './overlays.js';
+import { writeReport } from './report.js';
 
-registerSteps('第9章', [['c9', 'バリモアの話'], ['c9b', '書斎の暖炉'], ['c9d', 'L.L. とは'], ['c9e', '推理']]);
+registerSteps('第9章', [['c9', 'バリモアの話'], ['c9b', '書斎の暖炉'], ['c9d', 'L.L. とは'], ['c9e', '推理'], ['c9f', 'ワトソンの日記']]);
 const DAY = () => world.areas.hall.mood;
 
 async function barrymoreTalk() {
@@ -66,8 +67,18 @@ async function deduction() {
   await grade('c9');
 }
 
+// その夜：この二日のことを日記にまとめ、報告と一緒に送る
+async function diary() {
+  world.locked = true;
+  await ensure('hall', DAY(), null, null);
+  mood(DAY());
+  cast([['watson', 4.8, 7.45, Math.PI, true, null]]);
+  place('shizuku', 4.0, 8.6, Math.PI / 2);
+  await writeReport('r3', L);
+}
+
 export async function runChapter9() {
-  await runSteps([['c9', barrymoreTalk], ['c9b', study], ['c9d', mortimer], ['c9e', deduction]]);
+  await runSteps([['c9', barrymoreTalk], ['c9b', study], ['c9d', mortimer], ['c9e', deduction], ['c9f', diary]]);
   await endCard('第9章', '焼け残った手紙', 'つづく ―― 次は、岩山の男', 'c10');
 }
 export { A, faceTo, addPerson, watsonTalk };

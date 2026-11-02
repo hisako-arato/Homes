@@ -417,3 +417,49 @@ body.looking #labels .label { pointer-events: auto; cursor: pointer; padding: 4p
 #labels .label.dot { font-size: 20px; padding: 8px 10px; }
 #labels .label.dot.done { font-size: 16px; }
 #stick.run { border-color: var(--gold); box-shadow: 0 0 12px rgba(227,192,111,.6); }
+
+/* ホームズへの報告：画面の上に便箋。台詞と選択肢は、その下に出る */
+#report { position: fixed; left: 50%; top: calc(54px + var(--safe-t)); transform: translateX(-50%); width: min(520px, calc(100% - 24px)); z-index: 6;
+  max-height: calc(100% - 300px - var(--safe-t) - var(--safe-b)); display: none; flex-direction: column; pointer-events: none;
+  background: #efe6cf; color: #2a1e14; border-radius: 3px; box-shadow: 0 10px 30px #000; padding: 12px 14px; text-align: left; font-family: 'Hiragino Mincho ProN', 'Yu Mincho', serif; }
+#report.on { display: flex; animation: rfade .3s ease; }
+@keyframes rfade { from { opacity: 0; } }
+#report .rhead { border-bottom: 1px solid #b8a888; padding-bottom: 6px; margin-bottom: 6px; }
+#report .rhead b { display: block; font-size: 16px; }
+#report .rhead small { color: #6a5a48; font-size: 11px; line-height: 1.5; display: block; }
+#report .rbody { overflow-y: auto; min-height: 0; }
+#report p { margin: 4px 0; font-size: 14px; line-height: 1.7; }
+#report p.sec { font-weight: bold; color: #6e2a2a; margin-top: 10px; font-size: 13px; }
+#report p.draft { color: #8a7a68; border: 1px dashed #b8a070; border-radius: 4px; padding: 2px 6px; background: rgba(227,192,111,.2); }
+#report p.ink { color: #1a1a3a; animation: pop .3s ease; }
+#report p.ink.add::before { content: '✍ '; }
+#report p.struck { color: #a89880; text-decoration: line-through; font-size: 12px; }
+#report.telegram { background: #f3ecd2; border-top: 6px solid #6a7a9a; font-family: monospace; }
+#report.telegram p.ink, #report.telegram p.draft { letter-spacing: .08em; }
+
+/* 推理ノート：タブが多いときは2段に */
+.tabs.many { display: grid; grid-template-columns: repeat(4, 1fr); }
+.tabs.many button { font-size: 13px; padding: 6px 2px; }
+
+/* 容疑者 */
+.suspects { display: flex; flex-direction: column; gap: 10px; text-align: left; }
+.sus { background: #1a1411; border: 1px solid var(--line); border-radius: 8px; padding: 10px; }
+.sus.lv1 { border-color: #c8a050; }
+.sus.lv2 { border-color: #d05a4a; box-shadow: 0 0 10px rgba(208,90,74,.35); }
+.sus b { color: var(--gold); font-size: 15px; }
+.sus ul { list-style: none; margin: 6px 0; padding: 0; font-size: 13px; line-height: 1.6; }
+.sus li.x { color: #e8b8a8; }
+.sus li.o { color: var(--ok); }
+.sus .marks { display: flex; gap: 6px; }
+.sus .marks button { flex: 1; padding: 5px; font-size: 13px; background: transparent; border-color: var(--line); color: var(--muted); }
+.sus .marks button.on { background: var(--wine); border-color: var(--gold); color: var(--text); }
+.sus.lv0 .marks button.on { background: #3a4a3a; }
+
+/* 報告の控え */
+.rcopies { display: flex; flex-direction: column; gap: 12px; text-align: left; }
+.rcopy { text-align: left !important; background: #efe6cf; color: #2a1e14; border-radius: 3px; padding: 10px 12px; font-family: 'Hiragino Mincho ProN', 'Yu Mincho', serif; }
+.rcopy.telegram { font-family: monospace; border-top: 5px solid #6a7a9a; }
+.rcopy b { display: block; }
+.rcopy small { color: #6a5a48; font-size: 11px; }
+.rcopy p { text-align: left; margin: 4px 0; font-size: 13px; line-height: 1.6; }
+.rcopy i { display: block; font-size: 11px; color: #6a5a48; text-align: right; font-style: normal; }

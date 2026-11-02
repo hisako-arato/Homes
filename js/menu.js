@@ -4,6 +4,7 @@ import { world, history, snapshot, goTo, NAMES } from './play.js';
 import { THREE } from './engine.js';
 import { S, save, KEY, STEPS, stepIndex, reached, STEP_LABEL } from './save.js';
 import { LATE } from './data2.js';
+import { REPORTS, REPORT_ORDER } from './report.js';
 export { STEPS, stepIndex, reached };
 import { openNotebook, QSETS, iconOf } from './notebook.js';
 import { VERSION, VERSION_DATE } from './version.js';
@@ -274,6 +275,8 @@ function openScore() {
     if (L.hidden.length) { const n = L.hidden.filter(c => S.clues.includes(c)).length; r.push(['見つけにくい手がかり', `${n} / ${L.hidden.length}${n === L.hidden.length ? ' <span class="star">★</span>' : ''}`]); }
     rows.push([`第${L.n}章　${L.title}`, r]);
   }
+  const reps = REPORT_ORDER.filter(id => S.reports[id]);
+  if (reps.length) rows.push(['ホームズへの報告', reps.map(id => { const r = S.reports[id]; return [REPORTS[id].title, `事実の見分け ${r.ok} / ${r.n}${r.n && r.ok === r.n ? ' <span class="star">★</span>' : ''}`]; })]);
   const rate = askAll ? Math.round(hitAll / askAll * 100) : null;
   const body = rows.map(([t, r]) => `<h4>${t}</h4><table class="score">${r.map(([k, v]) => `<tr><th>${k}</th><td>${v}</td></tr>`).join('')}</table>`).join('');
   const m = panel(`<h3>成績</h3>${rate != null ? `<p class="rate">ホームズとの一致率<b>${rate}%</b></p>` : ''}${body || '<p class="empty">まだ成績はない</p>'}${back()}`, 'tall');
