@@ -1,5 +1,6 @@
 // 推理ノート：集めた手がかり・会った人物・推理（絵のカードで見せ、文字は一言にとどめる）
 import { S, reached } from './save.js';
+import { arm } from './tap.js';
 
 const $ = id => document.getElementById(id);
 
@@ -358,7 +359,7 @@ export function deduce(set = 'c1') {
   const picked = {};
   return new Promise(res => {
     let i = 0;
-    const show = () => {
+    const show = (back = false) => {
       const q = QS[i];
       const clueRow = S.clues.filter(id => !QSETS[set].clueIds || QSETS[set].clueIds.includes(id)).map(id => `<button class="clue" data-c="${id}"><img src="${iconOf(CLUES[id].icon)}" alt=""></button>`).join('');
       box.innerHTML = `<div class="panel"><p class="qn">推理 ${i + 1} / ${QS.length}</p><h3>${q.q}</h3>
@@ -379,8 +380,12 @@ export function deduce(set = 'c1') {
           res(true);
         };
       });
-      if ($('dedPrev')) $('dedPrev').onclick = () => { i--; show(); };
+      if ($('dedPrev')) $('dedPrev').onclick = () => { i--; show(true); };
       $('dedBack').onclick = () => { box.classList.add('hidden'); res(false); };
+      arm(box.querySelector('.opts'), 'button', { mark: true });
+      arm(box.querySelector('.dednav'), 'button');
+      // 次の問題は、横から滑り込ませる（前の問題と入れ替わったことが目で分かるように）
+      if (i > 0 || back) { const pn = box.querySelector('.panel'); pn.classList.add(back ? 'qback' : 'qslide'); }
     };
     show();
   });
@@ -407,5 +412,5 @@ export function results(set = 'c1') {
     <p class="verdict">${hit} / ${qs.length}　${verdict}</p>
     <h4>解説</h4><div class="expls">${expl}</div>
     <button class="primary">つづける</button></div>`;
-  return new Promise(res => { box.querySelector('button.primary').onclick = () => { box.classList.add('hidden'); res(hit); }; });
+  return new Promise(res => { box.querySelector('button.primary').onclick = () => { box.classList.add('hidden'); res(hit); }; arm(box, 'button.primary'); });
 }

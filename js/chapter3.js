@@ -7,6 +7,7 @@ import { showMoorMap, inspectLetter, timesPuzzle } from './paperwork.js';
 import { deduce, results, openNotebook } from './notebook.js';
 import { S, save, addClue, addPerson } from './save.js';
 import { chime, door, fanfare, miss, page } from './audio.js';
+import { arm } from './tap.js';
 import { LOOK, holdStick } from './story.js';
 import { titleCard, flash, placeCard } from './chapter2.js';
 
@@ -377,7 +378,7 @@ async function endCard() {
   c.innerHTML = `<p class="chap">第3章</p><h2>ヘンリー・バスカヴィル卿</h2><p class="next-ch">つづく ―― 次は、切れた三本の糸</p>
     <button class="primary" id="toTitle">タイトルへ</button>`;
   c.classList.remove('hidden');
-  await new Promise(res => { $('toTitle').onclick = res; });
+  await new Promise(res => { $('toTitle').onclick = res; arm(c, 'button'); });
   location.reload();
 }
 

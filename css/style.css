@@ -131,7 +131,7 @@ button.primary { width: 100%; margin-top: 12px; background: var(--gold); color: 
 .dedlist div { display: flex; justify-content: space-between; gap: 10px; border-bottom: 1px solid var(--line); padding: 6px 0; font-size: 14px; }
 .dedlist b { color: var(--gold); text-align: right; }
 .qn { text-align: center; color: var(--muted); font-size: 13px; margin: 0; }
-.clueRow { display: flex; justify-content: center; gap: 6px; margin-bottom: 10px; }
+.clueRow { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; margin-bottom: 10px; }
 .clueRow img { width: 48px; height: 48px; background: #1a1411; border: 1px solid var(--line); border-radius: 6px; }
 .opts { display: flex; flex-direction: column; gap: 10px; }
 .opts button { font-size: 16px; line-height: 1.4; }
@@ -351,3 +351,15 @@ body.fs-s .panel { font-size: 14px; }
 .times .tw.hit { background: rgba(227,192,111,.85); }
 .times .tw.miss { background: rgba(224,103,95,.5); }
 .tview .lcap { margin: 0; font-size: 14px; background: var(--panel); border: 1px solid var(--gold); border-radius: 8px; padding: 8px 10px; }
+
+/* 誤タップ防止：出た直後は薄く（押せない）、押せるようになると濃くなる。選んだボタンには ✓ */
+.arming button { opacity: .4; }
+#choices button, #picker button, .opts button, .dednav button, #modal button, .card button, #deduce button { transition: opacity .22s ease, transform .15s ease, box-shadow .15s ease; }
+button.chosen { position: relative; box-shadow: 0 0 0 3px var(--gold), 0 0 18px rgba(227,192,111,.8) !important; transform: scale(1.02); }
+button.chosen::after { content: '✓'; position: absolute; right: 10px; top: 50%; transform: translateY(-50%); font-weight: bold; color: var(--gold); font-size: 18px; }
+#picker button.chosen::after, .opts.pics button.chosen::after { top: 8px; transform: none; }
+.picked button:not(.chosen) { opacity: .35; }
+.panel.qslide { animation: qslide .28s ease; }
+.panel.qback { animation: qback .28s ease; }
+@keyframes qslide { from { transform: translateX(28px); opacity: 0; } }
+@keyframes qback { from { transform: translateX(-28px); opacity: 0; } }

@@ -7,6 +7,7 @@ import { makeStick, STREET_Y } from './room.js';
 import { inspectStick } from './inspect.js';
 import { deduce, results, openNotebook } from './notebook.js';
 import { S, save, addClue, addPerson } from './save.js';
+import { arm } from './tap.js';
 import { chime, bell, door, fanfare, miss } from './audio.js';
 import { runChapter2 } from './chapter2.js';
 import { runChapter3 } from './chapter3.js';
@@ -376,6 +377,7 @@ async function endCard() {
   await new Promise(res => {
     $('toNext').onclick = res;
     $('toTitle').onclick = () => { S.step = 'c2'; save(); location.reload(); };
+    arm(c, 'button');
   });
   c.classList.add('hidden');
 }

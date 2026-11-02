@@ -6,6 +6,7 @@ import { world, place, hide, setPose, setFace, faceTo, faceActor, walkTo, say, t
 import { playLegend, showNewspaper } from './legend.js';
 import { deduce, results, openNotebook } from './notebook.js';
 import { S, save, addClue, addPerson } from './save.js';
+import { arm } from './tap.js';
 import { chime, door, fanfare, miss, page } from './audio.js';
 import { LOOK, holdStick } from './story.js';
 
@@ -280,6 +281,7 @@ async function endCard() {
   await new Promise(res => {
     $('toNext').onclick = res;
     $('toTitle').onclick = () => { S.step = 'c3'; save(); location.reload(); };
+    arm(c, 'button');
   });
   c.classList.add('hidden');
 }

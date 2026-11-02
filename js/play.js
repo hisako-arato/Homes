@@ -5,6 +5,7 @@ import { buildAlley } from './alley.js';
 import { buildStreet } from './street.js';
 import { buildNav, findPath } from './nav.js';
 import { loadVRM, driveVRM } from './vrm.js';
+import { arm } from './tap.js';
 
 const $ = id => document.getElementById(id);
 export const world = { room: null, areas: {}, actors: {}, mode: 'follow', locked: true, onThing: null, onActor: null, examined: new Set(), sparkle: () => true };
@@ -109,8 +110,9 @@ export function choose(options) {
   box.classList.remove('hidden');
   return new Promise(res => {
     box.querySelectorAll('button').forEach(b => {
-      b.onclick = e => { e.stopPropagation(); box.classList.add('hidden'); world.locked = was; res(b.dataset.k); };
+      b.onclick = e => { e && e.stopPropagation && e.stopPropagation(); box.classList.add('hidden'); world.locked = was; res(b.dataset.k); };
     });
+    arm(box, 'button', { mark: true });
   });
 }
 
@@ -237,12 +239,12 @@ function openPicker(list, cx, cy, floorAt) {
   el.style.left = Math.max(8, Math.min(innerWidth - w - 8, cx - w / 2)) + 'px';
   el.style.top = Math.max(8, Math.min(innerHeight - h - 8, cy - h - 16)) + 'px';
   el.querySelectorAll('button').forEach(b => {
-    b.onclick = e => {
-      e.stopPropagation();
+    b.onclick = () => {
       closePicker();
       if (b.dataset.k === 'floor') goFloor(...floorAt); else goKey(b.dataset.k);
     };
   });
+  arm(el, 'button', { mark: true });
 }
 export function closePicker() { $('picker').classList.add('hidden'); }
 let goal = 0;   // 新しい指示が来たら、前の「着いたら調べる」を取り消す
@@ -478,7 +480,7 @@ export function say(who, text, opt = {}) {
   return new Promise(res => {
     const t0 = performance.now();
     const go = e => {
-      if (performance.now() - t0 < 180) return;
+      if (performance.now() - t0 < 300) return;   // 前の操作の続きのタップで、台詞を読み飛ばさない
       e && e.preventDefault();
       box.removeEventListener('pointerup', go);
       removeEventListener('keydown', key);

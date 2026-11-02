@@ -7,6 +7,7 @@ export { STEPS, stepIndex, reached };
 import { openNotebook, QSETS, iconOf } from './notebook.js';
 import { VERSION, VERSION_DATE } from './version.js';
 import { isMuted, setMuted, getVolume, setVolume, page } from './audio.js';
+import { arm } from './tap.js';
 
 const $ = id => document.getElementById(id);
 const SLOTS = 3;
@@ -40,6 +41,8 @@ function panel(html, cls = '') {
   const m = modal();
   m.innerHTML = `<div class="panel ${cls}">${html}</div>`;
   m.classList.remove('hidden');
+  // ボタンの onclick は、呼んだ側がこの後すぐ付ける。付け終わってから、誤タップ防止をかける（設定の切り替えなどは何度でも押せる）
+  queueMicrotask(() => arm(m, 'button', { once: false }));
   return m;
 }
 export const closeModal = () => modal().classList.add('hidden');
